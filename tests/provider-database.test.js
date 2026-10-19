@@ -69,3 +69,12 @@ test('Normalization preserves cookie headers and custom provider independence in
     assert.deepEqual(actual[1].deepSeekTokens, []); assert.deepEqual(actual[1].qwenTokens, []);
     assert.equal(actual[2].temperature, 0); assert.equal(actual[2].thinkingEnabled, true);
 });
+test('Gemini paragraph mode can be switched off and on through the real settings API and MongoDB', async () => {
+    for (const enabled of [false, true, false]) {
+        const res = await fetch(base + '/api/translator/settings', { method: 'POST', headers: { Authorization: 'Bearer test-admin', 'Content-Type': 'application/json' },
+            body: JSON.stringify({ translationProviders: [{ providerId: 'gemini_web_toggle', name: 'Gemini', apiKeys: ['fake-cookie'], geminiParagraphMode: enabled }] }) });
+        assert.equal(res.status, 200);
+        const saved = await (await fetch(base + '/api/translator/settings', { headers: { Authorization: 'Bearer test-admin' } })).json();
+        assert.equal(saved.translationProviders[0].geminiParagraphMode, enabled);
+    }
+});

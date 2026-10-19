@@ -54,7 +54,7 @@ async function callAccountProvider(provider, model, token, prompt, options = {})
             if (persistent) await store.set(key, context);
             return text;
         };
-        if (purpose === 'translation' && options.sourceText) {
+        if (/^gemini_web(?:_|$)/i.test(provider.providerId || '') && provider.geminiParagraphMode !== false && purpose === 'translation' && options.sourceText) {
             return translateComplete({ source: options.sourceText, prompt, send,
                 chunkSize: provider.translationChunkChars || 2400, log: options.log });
         }

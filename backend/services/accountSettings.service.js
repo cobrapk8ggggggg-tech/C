@@ -28,6 +28,7 @@ function normalizeAccountSettings(p) {
         maxTokens: Math.trunc(number(p.maxTokens ?? 16384, 16384, 256, 131072)),
         presencePenalty: number(p.presencePenalty ?? 0, 0, -2, 2),
         frequencyPenalty: number(p.frequencyPenalty ?? 0, 0, -2, 2),
+        geminiParagraphMode: /^gemini_web(?:_|$)/i.test(p.providerId || '') && p.geminiParagraphMode !== false,
         translationChunkChars: Math.trunc(number(p.translationChunkChars ?? 2400, 2400, 500, 6000)),
         taskConversations: tasks
     };

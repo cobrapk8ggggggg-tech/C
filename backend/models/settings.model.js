@@ -111,6 +111,7 @@ RETURN ONLY JSON:` },
         maxTokens: { type: Number, default: 16384 },
         presencePenalty: { type: Number, default: 0 },
         frequencyPenalty: { type: Number, default: 0 },
+        geminiParagraphMode: { type: Boolean, default: true },
         translationChunkChars: { type: Number, default: 2400 },
         taskConversations: { type: Map, of: new mongoose.Schema({
             mode: { type: String, enum: ['new', 'reuse', 'per_job'], default: 'per_job' },

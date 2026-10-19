@@ -75,3 +75,5 @@ LIVE_PROVIDER=gemini GOOGLE_COOKIES_FILE=/absolute/private/cookies.sh node --max
 LIVE_PROVIDER=chatgpt CHATGPT_ACCESS_TOKEN='...' node scripts/live-account-discovery.js
 LIVE_PROVIDER=deepseek_worker DEEPSEEK_ACCESS_TOKEN='...' node scripts/live-account-discovery.js
 ```
+
+اختبارات وضع الفقرات: ChatGPT وDeepSeek يرسلان الفصل كاملًا دون علامات حتى مع خيار محفوظ true. Gemini بدون قيمة محفوظة أو مع true يستخدم الأجزاء وفحص التغطية، ومع false يرسل prompt الأصلي كما هو في طلب واحد. يشمل الاختبار حفظ false/true/false عبر API وMongoDB، وتبديل المفتاح في الموقع وحفظه وإعادة فتح الصفحة على الكمبيوتر والهاتف.

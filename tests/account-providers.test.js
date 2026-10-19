@@ -180,3 +180,49 @@ test('Project chat listing requests the project endpoint, not the limited sideba
     nock(BASE).get('/backend-api/gizmos/project%2Fsafe/conversations').query({ limit: 50, cursor: 'page2' }).reply(200, { items: [{ id: 'sixth-chat' }], next_cursor: 'page3' });
     assert.equal((await new ChatGPTAndroid('t', 'a').projectChats('project/safe', 'page2')).items[0].id, 'sixth-chat');
 });
+
+test('ChatGPT always receives the untouched complete chapter in one request, even if paragraph mode was saved true', async () => {
+    const source = 'A long paragraph from a novel. '.repeat(250) + '\n\nThe final paragraph.';
+    const prompt = 'Translate the entire chapter:\n' + source;
+    const sent = [];
+    const chatgptClient = { send: async input => { sent.push(input); return 'الفصل كاملًا.'; } };
+    assert.equal(await callAccountProvider({ providerId: 'chatgpt_test', geminiParagraphMode: true, translationChunkChars: 500 }, 'auto', 'token', prompt,
+        { conversationPurpose: 'chapters', sourceText: source, chatgptClient }), 'الفصل كاملًا.');
+    assert.deepEqual(sent, [prompt]);
+});
+test('DeepSeek Worker receives the full chapter without paragraph markers', async () => {
+    const source = 'A detailed novel paragraph. '.repeat(220);
+    const prompt = 'Translate:\n' + source;
+    nock('https://deepseek-pow.contact-3mh.workers.dev').post('/api/chat', body => body.prompt === prompt)
+        .reply(200, { response: 'ترجمة الفصل.' });
+    assert.equal(await callAccountProvider({ providerId: 'deepseek_worker_test', geminiParagraphMode: true }, 'deepseek-chat', 'token', prompt,
+        { conversationPurpose: 'chapters', sourceText: source }), 'ترجمة الفصل.');
+});
+for (const enabled of [undefined, true, false]) test(`Gemini paragraph mode ${enabled === undefined ? 'defaults on' : enabled ? 'on' : 'off'} follows saved provider preference`, async () => {
+    const source = ['An event in the novel. '.repeat(35), 'The final event. '.repeat(35)].join('\n\n');
+    const prompt = 'Translate fully:\n' + source;
+    const sent = [];
+    nock('https://gemini.google.com').persist().get('/u/1/app').reply(200, '"SNlM0e":"csrf","FdrFJe":"-123"');
+    nock('https://gemini.google.com').persist().post('/u/1/_/BardChatUi/data/assistant.lamda.BardFrontendService/StreamGenerate').query(true).reply((uri, body) => {
+        const form = typeof body === 'string' ? new URLSearchParams(body) : body;
+        const request = JSON.parse(JSON.parse(form.get ? form.get('f.req') : form['f.req'])[1])[0][0];
+        sent.push(request);
+        let answer = 'ترجمة الفصل كاملًا.';
+        if (enabled !== false) {
+            const nonce = request.match(/\[\[END_([a-f0-9]+)\]\]/)[1];
+            const ids = [...request.matchAll(new RegExp(`\\[\\[${nonce}_(\\d{6})\\]\\]`, 'g'))];
+            answer = ids.map(m => `${m[0]}\n${'ترجمة عربية مفصلة لجميع أحداث هذه الفقرة دون اختصار. '.repeat(30)}`).join('\n') + `\n[[END_${nonce}]]`;
+        }
+        return [200, gemFrame(answer)];
+    });
+    const provider = { providerId: 'gemini_web_test', translationChunkChars: 500, ...(enabled === undefined ? {} : { geminiParagraphMode: enabled }) };
+    const result = await callAccountProvider(provider, 'adaptive', '__Secure-1PSID=paragraph-mode-test', prompt,
+        { conversationPurpose: 'chapters', sourceText: source });
+    if (enabled === false) assert.deepEqual(sent, [prompt]);
+    else { assert.ok(sent.length > 1); assert.ok(sent.every(p => p.includes('[[END_'))); assert.ok(!result.includes('[[END_')); }
+});
+test('Paragraph mode normalizes false without replacing it and is ignored for other providers', () => {
+    assert.equal(normalizeAccountSettings({ providerId: 'gemini_web_1' }).geminiParagraphMode, true);
+    assert.equal(normalizeAccountSettings({ providerId: 'gemini_web_1', geminiParagraphMode: false }).geminiParagraphMode, false);
+    assert.equal(normalizeAccountSettings({ providerId: 'chatgpt_1', geminiParagraphMode: true }).geminiParagraphMode, false);
+});

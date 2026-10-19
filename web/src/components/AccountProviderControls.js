@@ -5,7 +5,7 @@ import api from '../services/api';
 
 export const ACCOUNT_FIELDS = ['chatgptAccountId', 'reasoningEffort', 'geminiAccountIndex', 'geminiBuildLabel',
   'geminiModelHeader', 'allowGuestFallback', 'temperature', 'maxTokens', 'presencePenalty', 'frequencyPenalty',
-  'translationChunkChars', 'taskConversations'];
+  'geminiParagraphMode', 'translationChunkChars', 'taskConversations'];
 const TASKS = [['translation', 'الترجمة'], ['glossary', 'المصطلحات'], ['review', 'المراجعة'], ['titles', 'العناوين'], ['metadata', 'البيانات']];
 const buttonStyle = { padding: 10, backgroundColor: '#263548', borderRadius: 7, marginVertical: 4 };
 const labelStyle = { color: '#ddd', textAlign: 'right', marginVertical: 5 };
@@ -58,7 +58,7 @@ export default function AccountProviderControls({ provider, onChange, onModels, 
   return <View style={{ marginVertical: 12 }}>
     <Text style={labelStyle}>إعدادات الحساب والمحادثات حسب المهمة</Text>
     {busy && <ActivityIndicator accessibilityLabel="جارٍ الاتصال بالمزوّد" />}
-    {field('حجم جزء الترجمة بالأحرف (500–6000)', 'translationChunkChars', true, provider.translationChunkChars ?? 2400)}
+    {gemini && <View><View style={{ flexDirection: 'row', alignItems: 'center' }}><Switch accessibilityLabel="تقسيم الفصل وفحص الفقرات" value={provider.geminiParagraphMode !== false} onValueChange={v => onChange('geminiParagraphMode', v)} /><Text style={labelStyle}>تقسيم الفصل وفحص الفقرات (Gemini فقط)</Text></View><Text style={labelStyle}>عند التعطيل يُرسل الفصل كاملًا دون تقسيم أو علامات للفقرات.</Text>{provider.geminiParagraphMode !== false && field('حجم جزء الترجمة بالأحرف (500–6000)', 'translationChunkChars', true, provider.translationChunkChars ?? 2400)}</View>}
     {gpt && <>
       {field('معرّف حساب ChatGPT (اختياري إذا كان ضمن التوكن)', 'chatgptAccountId')}
       {field('مستوى التفكير (auto / light / standard / extended / heavy؛ يعتمد على النموذج)', 'reasoningEffort', false, provider.reasoningEffort || 'auto')}
