@@ -7,15 +7,13 @@ const BASE = 'https://android.chat.openai.com';
 class ChatGPTAndroid {
     constructor(token, accountId) {
         if (!token) throw new Error('ChatGPT access token is required');
-        if (!accountId) {
-            try {
-                const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
-                accountId = claims['https://api.openai.com/auth'].chatgpt_account_id;
-            } catch (_) { throw new Error('Invalid ChatGPT token; provide a session access token and account ID'); }
-        }
-        if (!accountId) throw new Error('ChatGPT account ID is required');
+        token = token.trim().replace(/^Bearer\s+/i, '');
+        try {
+            const claims = JSON.parse(Buffer.from(token.split('.')[1], 'base64url').toString());
+            accountId = claims['https://api.openai.com/auth']?.chatgpt_account_id || accountId;
+        } catch (_) { /* Opaque session tokens are resolved through the account endpoint. */ }
         this.http = axios.create({ baseURL: BASE, timeout: 60000, headers: {
-            Authorization: `Bearer ${token}`, 'ChatGPT-Account-ID': accountId,
+            Authorization: `Bearer ${token}`, ...(accountId ? { 'ChatGPT-Account-ID': accountId } : {}),
             'User-Agent': 'ChatGPT/1.2026.195 (Android 16; 24117RN76G; build 2619512)',
             'oai-package-name': 'com.openai.chatgpt', 'oai-client-type': 'android',
             Accept: 'text/event-stream,application/json', 'Content-Type': 'application/json',
@@ -23,22 +21,39 @@ class ChatGPTAndroid {
             'chatgpt-residency-region': 'no_constraint', 'x-device-tier': 'mid'
         }});
     }
-    async get(path, params) { return (await this.http.get(path, { params })).data; }
+    async ready() {
+        if (!this.http.defaults.headers['ChatGPT-Account-ID']) {
+            if (!this.accountRequest) this.accountRequest = this.http.get('/backend-api/accounts/check/v4-2023-04-27').then(({ data }) => {
+                const id = data.default_account_id || data.account_ordering?.[0] || Object.keys(data.accounts || {})[0];
+                if (!id) throw new Error('تعذر اكتشاف حساب ChatGPT من التوكن؛ تحقق من صلاحية توكن الجلسة');
+                this.http.defaults.headers['ChatGPT-Account-ID'] = id;
+            }).catch(error => { this.accountRequest = null; throw error; });
+            await this.accountRequest;
+        }
+    }
+    async get(path, params) { await this.ready(); return (await this.http.get(path, { params })).data; }
     async models() { return (await this.get('/backend-api/models')).models || []; }
     async chats(offset = 0) {
         return this.get('/backend-api/conversations', { offset, limit: 50, order: 'updated', is_archived: false });
     }
     async projects(cursor) {
         const data = await this.get('/backend-api/gizmos/snorlax/sidebar', {
-            owned_only: true, conversations_per_gizmo: 50, limit: 50, ...(cursor ? { cursor } : {})
+            owned_only: true, conversations_per_gizmo: 5, limit: 50, ...(cursor ? { cursor } : {})
         });
         return { ...data, items: (data.items || []).map(x => {
             const g = x.gizmo?.gizmo || {};
             return { id: g.id, name: g.display?.name || 'بدون اسم', chats: x.conversations?.items || [] };
         }) };
     }
+    async projectChats(id, cursor) {
+        if (!id) throw new Error('A project is required');
+        return this.get('/backend-api/gizmos/' + encodeURIComponent(id) + '/conversations', {
+            limit: 50, ...(cursor ? { cursor } : {})
+        });
+    }
     async conversation(id) { return this.get('/backend-api/conversation/' + encodeURIComponent(id)); }
     async upload(file) {
+        await this.ready();
         if (!file?.buffer || !file.originalname) throw new Error('A file is required');
         const mime = file.mimetype || 'application/octet-stream';
         const { data } = await this.http.post('/backend-api/files', {
@@ -60,6 +75,7 @@ class ChatGPTAndroid {
             size_bytes: file.buffer.length, width, height } };
     }
     async send(prompt, options = {}) {
+        await this.ready();
         const context = options.context || {};
         const cid = context.conversationId || options.conversationId;
         let parent = context.parentMessageId || crypto.randomUUID();
@@ -110,3 +126,10 @@ class ChatGPTAndroid {
     }
 }
 module.exports = { ChatGPTAndroid };
+
+function selectableModel(model) {
+    const levels = model.supported_reasoning_efforts || model.supported_thinking_efforts || model.reasoning_efforts;
+    return { modelId: model.slug, modelName: model.title || model.slug,
+        ...(Array.isArray(levels) ? { reasoningEfforts: levels.filter(x => typeof x === 'string' && /^[a-z_]{1,30}$/.test(x)) } : {}) };
+}
+module.exports.selectableModel = selectableModel;

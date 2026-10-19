@@ -1,0 +1,12 @@
+{
+  "date": "2026-10-19T15:03:47.121Z",
+  "provider": "gemini",
+  "type": "live-discovery-and-new-conversation",
+  "credentialsIncluded": false,
+  "accountIndex": 0,
+  "modelCount": 1,
+  "chatCount": 50,
+  "receivedReply": true,
+  "conversationCreated": true,
+  "status": "passed"
+}

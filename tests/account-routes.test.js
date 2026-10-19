@@ -9,6 +9,7 @@ const provider = { providerId: 'chatgpt_1', apiKeys: ['private-token'], chatgptA
     translation: { projectId: 'project', conversationId: 'old-cid' } } };
 const client = () => ({ models: async () => [{ slug: 'auto', title: 'Automatic' }],
     projects: async () => ({ items: [{ id: 'project', name: 'Project', chats: [{ id: 'c' }] }] }),
+    projectChats: async id => ({ items: [{ id: id + '-chat', title: 'Inside project' }] }),
     chats: async offset => ({ items: [{ id: String(offset) }] }),
     conversation: async id => ({ current_node: 'n', gizmo_id: 'project', title: id }),
     upload: async file => ({ attachment: { id: 'f', name: file.originalname, size: file.buffer.length } }),
@@ -58,11 +59,26 @@ test('Native multipart upload reaches client with exact bytes', async () => {
     const data = await res.json(); assert.equal(res.status, 200); assert.equal(data.attachment.attachment.name, 'chapter.txt'); assert.equal(data.attachment.attachment.size, 5);
 });
 test('Provider error sanitization does not expose Axios credential config', () => {
-    assert.equal(register.safeError({ isAxiosError: true, response: { status: 403 }, config: { headers: { Authorization: 'private' } } }), 'Provider HTTP 403');
+    assert.equal(register.safeError({ isAxiosError: true, response: { status: 403 }, config: { headers: { Authorization: 'private' } } }).includes('بيانات الحساب'), true);
 });
 
 test('Oversized attachments return an explicit 413 response', async () => {
     const form = new FormData(); form.append('provider', JSON.stringify(provider)); form.append('file', new Blob(['x'.repeat(2048)]), 'large.txt');
     const res = await fetch(base + 'upload', { method: 'POST', headers: { Authorization: 'Bearer admin' }, body: form });
     assert.equal(res.status, 413); assert.ok((await res.json()).message);
+});
+
+test('Connect bundles account models, projects and chats without leaking credentials', async () => {
+    const res = await post('connect'); const data = await res.json();
+    assert.equal(res.status, 200); assert.equal(data.models[0].modelId, 'auto');
+    assert.equal(data.projects.items[0].id, 'project'); assert.equal(data.capabilities.projects, true);
+    assert.equal(JSON.stringify(data).includes('private-token'), false);
+});
+test('Selecting a project fetches its own chat list', async () => {
+    const res = await post('project-chats', { projectId: 'project' });
+    assert.equal((await res.json()).items[0].id, 'project-chat');
+});
+test('One-click creation needs no manually typed prompt', async () => {
+    const res = await post('send', { createNew: true, purpose: 'glossary' });
+    assert.equal(res.status, 200); assert.equal((await res.json()).context.conversationId, 'new-cid');
 });

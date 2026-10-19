@@ -59,7 +59,7 @@ test('ChatGPT does not retry conversation POST on upstream 500', async () => {
 test('ChatGPT lists models, projects and paginated chats with account headers', async () => {
     nock(BASE, { reqheaders: { authorization: 'Bearer t', 'chatgpt-account-id': 'a' } })
         .get('/backend-api/models').reply(200, { models: [{ slug: 'auto' }] })
-        .get('/backend-api/gizmos/snorlax/sidebar').query(q => q.cursor === 'next').reply(200, { items: [{ gizmo: { gizmo: { id: 'p', display: { name: 'Project' } } }, conversations: { items: [{ id: 'c' }] } }], cursor: 'next2' })
+        .get('/backend-api/gizmos/snorlax/sidebar').query(q => q.cursor === 'next' && q.conversations_per_gizmo === '5').reply(200, { items: [{ gizmo: { gizmo: { id: 'p', display: { name: 'Project' } } }, conversations: { items: [{ id: 'c' }] } }], cursor: 'next2' })
         .get('/backend-api/conversations').query(q => q.offset === '50' && q.limit === '50').reply(200, { items: [{ id: 'c' }] });
     const api = new ChatGPTAndroid('t', 'a');
     assert.equal((await api.models())[0].slug, 'auto');
@@ -69,7 +69,7 @@ test('ChatGPT lists models, projects and paginated chats with account headers', 
 test('ChatGPT extracts account ID from JWT claims without logging token', () => {
     const payload = Buffer.from(JSON.stringify({ 'https://api.openai.com/auth': { chatgpt_account_id: 'account-jwt' } })).toString('base64url');
     assert.equal(new ChatGPTAndroid('x.' + payload + '.x').http.defaults.headers['ChatGPT-Account-ID'], 'account-jwt');
-    assert.throws(() => new ChatGPTAndroid('invalid'), /Invalid ChatGPT token/);
+    assert.equal(new ChatGPTAndroid('opaque-session').http.defaults.headers['ChatGPT-Account-ID'], undefined);
 });
 test('ChatGPT uploads a file without forwarding account credentials to storage', async () => {
     nock(BASE).post('/backend-api/files', q => q.file_name === 'chapter.txt' && q.file_size === 5).reply(200, { file_id: 'file1', upload_url: 'https://storage.example/upload' });
@@ -168,4 +168,15 @@ test('Custom models named GPT or DeepSeek do not hijack provider classification'
     assert.equal(isChatGPTProvider({ providerId: 'custom', name: 'ChatGPT', selectedModel: 'gpt-test' }), false);
     assert.equal(isDeepSeekWorkerProvider({ providerId: 'custom', selectedModel: 'deepseek-chat' }), false);
     assert.equal(isDeepSeekWorkerProvider({ providerId: 'deepseek_worker_1' }), true);
+});
+
+test('Opaque ChatGPT token discovers account without a manually entered ID', async () => {
+    nock(BASE, { reqheaders: { authorization: 'Bearer opaque' }, badheaders: ['chatgpt-account-id'] })
+        .get('/backend-api/accounts/check/v4-2023-04-27').reply(200, { default_account_id: 'discovered', accounts: { discovered: {} } });
+    nock(BASE, { reqheaders: { 'chatgpt-account-id': 'discovered' } }).get('/backend-api/models').reply(200, { models: [{ slug: 'auto' }] });
+    assert.equal((await new ChatGPTAndroid('Bearer opaque').models())[0].slug, 'auto');
+});
+test('Project chat listing requests the project endpoint, not the limited sidebar preview', async () => {
+    nock(BASE).get('/backend-api/gizmos/project%2Fsafe/conversations').query({ limit: 50, cursor: 'page2' }).reply(200, { items: [{ id: 'sixth-chat' }], next_cursor: 'page3' });
+    assert.equal((await new ChatGPTAndroid('t', 'a').projectChats('project/safe', 'page2')).items[0].id, 'sixth-chat');
 });

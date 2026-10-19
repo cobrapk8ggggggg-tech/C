@@ -63,3 +63,15 @@ LIVE_PROVIDER=deepseek_worker DEEPSEEK_ACCESS_TOKEN='...' npm run test:live
 الكوكيز تقرأ كنص أو كقيمة `export BROWSER_COOKIE_HEADER='...'` دون تنفيذ ملف shell. يمكن تغيير `GEMINI_ACCOUNT_INDEX`. تحفظ النتائج الافتراضية في `.local-live/` المستثناة من git. النصوص والكوكيز لا تطبع في السجل. اختبارات CI لا تستعمل الحسابات الحقيقية.
 
 لم يُبنَ APK/IPA ولم يشغّل التطبيق على جهاز فعلي؛ تصدير Expo يتحقق من تجميع JavaScript والأصول، واختبارات الواجهة تستعمل React مع مكونات native محاكاة. نجاح هذه الاختبارات لا يثبت تفعيل خيار التفكير في حساب ChatGPT، ولا يختبر تغييرات البروتوكول المستقبلية في واجهات الحسابات غير الرسمية.
+
+تحديث الاكتشاف التلقائي: اختبارات إضافية تغطي توكن ChatGPT opaque وBearer، معامل sidebar بخمس محادثات، مسار محادثات المشروع، ربط القوائم في طلب واحد، وإنشاء دون prompt يدوي. اختبارات Gemini تغطي GetUserStatus بما فيه status المحذوف/null الطبيعي ورفض 1016، النماذج وترويساتها، القوائم وأحدث response/choice، وحصر اختيارات النماذج في الحساب؛ اختبارات Worker تغطي قوائم النماذج والجلسات. بيانات الحسابات في الاختبارات مصطنعة ولا تستعمل CI الكوكيز الخاصة.
+
+نتيجة حية بتاريخ 2026-10-19: [تقرير اكتشاف Gemini](gemini-discovery-live-result.json). باستخدام الكوكيز الخاصة دون حفظها في git، اكتشف الحساب تلقائيًا، وجلب نموذج الحساب و50 محادثة، وأنشأ محادثة اختبار باستخدام ترويسة النموذج المكتشفة ووصل رد فعلي. تحقق منفصل للقراءة فقط نجح في جلب response/choice لأحدث turn في محادثة موجودة. التقرير لا يتضمن أسماء المحادثات أو المعرّفات أو نصوصها. هذا الاختبار خاص بالاكتشاف والإنشاء، وليس إعادة لاختبار ترجمة فصل كامل؛ نتيجة الفصل الحية السابقة باقية في التقرير السابق.
+
+يمكن إعادة فحص قوائم الحساب فقط دون إنشاء رسائل:
+
+```sh
+LIVE_PROVIDER=gemini GOOGLE_COOKIES_FILE=/absolute/private/cookies.sh node --max-http-header-size=262144 scripts/live-account-discovery.js
+LIVE_PROVIDER=chatgpt CHATGPT_ACCESS_TOKEN='...' node scripts/live-account-discovery.js
+LIVE_PROVIDER=deepseek_worker DEEPSEEK_ACCESS_TOKEN='...' node scripts/live-account-discovery.js
+```

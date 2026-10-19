@@ -44,12 +44,11 @@ async function callAccountProvider(provider, model, token, prompt, options = {})
                     temperature: provider.temperature, maxTokens: provider.maxTokens, presencePenalty: provider.presencePenalty,
                     frequencyPenalty: provider.frequencyPenalty, timeout: options.timeout });
             } else {
-                if (effectiveModel && !['adaptive', 'gemini-web'].includes(effectiveModel) && !provider.geminiModelHeader) {
-                    throw new Error('Gemini Web model selection requires a verified JSPB model header');
-                }
+                const detected = effectiveModel && !['adaptive', 'gemini-web'].includes(effectiveModel)
+                    ? await require('./geminiDiscovery.service').geminiOptions(token, effectiveModel, provider.geminiAccountIndex) : {};
                 text = await askGeminiWeb(input, { token, context, timeout: options.timeout, log: options.log,
                     accountIndex: provider.geminiAccountIndex ?? 1, buildLabel: provider.geminiBuildLabel,
-                    modelHeader: provider.geminiModelHeader, allowGuestFallback: provider.allowGuestFallback === true,
+                    modelHeader: provider.geminiModelHeader, ...detected, allowGuestFallback: provider.allowGuestFallback === true,
                     autoContinue: false, attachments: options.attachments });
             }
             if (persistent) await store.set(key, context);

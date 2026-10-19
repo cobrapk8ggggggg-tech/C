@@ -183,7 +183,7 @@ async function getTokens(jar, options = {}) {
         return null;
     }
     // Do not log session tokens.
-    return { snlm0e, fdrfje };
+    return { snlm0e, fdrfje, buildLabel: page.match(/"cfb2h"\s*:\s*"([^"]+)"/)?.[1] };
 }
 
 // ---------- 🔥 جلب توكني الجلسة في وضع الضيف (نقل حرفي لـ _gemini_fallback_get_tokens) ----------
@@ -258,7 +258,7 @@ async function sendMessage(jar, tokens, prompt, conv, timeoutMs, options = {}) {
         'f.req': JSON.stringify([null, JSON.stringify(d1)])
     };
     const params = {
-        bl: options.buildLabel || GEMINI_BL,
+        bl: options.buildLabel || tokens.buildLabel || GEMINI_BL,
         hl: 'ar',
         pageId: 'none',
         _reqid: String(Math.floor(Math.random() * 9_000_000) + 1_000_000),
@@ -530,7 +530,7 @@ async function askGeminiWeb(prompt, options = {}) {
     return runGuestMode(prompt, { timeoutMs, log });
 }
 
-module.exports = { askGeminiWeb, GeminiWebAuthError, GUEST_TOKEN_SENTINEL, looksLikeGeminiCookies, consumeStreamGenerate, uploadGeminiAttachment, extractSessionTokens }; 
+module.exports = { askGeminiWeb, GeminiWebAuthError, GUEST_TOKEN_SENTINEL, looksLikeGeminiCookies, consumeStreamGenerate, uploadGeminiAttachment, extractSessionTokens, getJar, getTokens, geminiHeaders, cookiesToString, mergeSetCookies };
 
 async function uploadGeminiAttachment(token, file) {
     if (!looksLikeGeminiCookies(token)) throw new GeminiWebAuthError('Gemini account cookies are required for uploads');
