@@ -27,7 +27,7 @@ function safeError(err) {
             ? String(err.message).slice(0, 180) : 'تعذر تنفيذ طلب المزوّد';
 }
 module.exports = function(app, verifyToken, verifyAdmin, upload, deps = {}) {
-    const client = deps.client || (p => new ChatGPTAndroid(p.apiKeys[0], p.chatgptAccountId));
+    const client = deps.client || (p => new ChatGPTAndroid(p.apiKeys[0]));
     const wrap = fn => async (req, res) => {
         try { await fn(req, res, readProvider(req)); }
         catch (err) { res.status(err.response?.status === 429 ? 429 : 400).json({ message: safeError(err) }); }

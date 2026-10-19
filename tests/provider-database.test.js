@@ -49,6 +49,7 @@ test('Real MongoDB conversation state survives independent provider calls', asyn
 });
 test('Unified caller accepts a Mongoose provider subdocument with Map task settings', async () => {
     const data = await Settings.findOne(); const provider = data.translationProviders[0];
+    nock('https://android.chat.openai.com').get('/backend-api/accounts/check/v4-2023-04-27').reply(200, { default_account_id: 'a' });
     nock('https://android.chat.openai.com').get('/backend-api/conversation/translation-chat').reply(200, { current_node: 'n', gizmo_id: 'p' });
     nock('https://android.chat.openai.com').post('/backend-api/conversation', body => body.model === 'custom' && body.conversation_mode.gizmo_id === 'p')
         .reply(200, 'data: ' + JSON.stringify({ conversation_id: 'translation-chat', message: { id: 'm', author: { role: 'assistant' }, status: 'finished_successfully', content: { parts: ['تم.'] } } }) + '\n\n');

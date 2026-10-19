@@ -34,7 +34,7 @@ async function callAccountProvider(provider, model, token, prompt, options = {})
             const effectiveModel = task.model || model;
             let text;
             if (isChatGPTProvider(provider)) {
-                const api = options.chatgptClient || new ChatGPTAndroid(token, provider.chatgptAccountId);
+                const api = options.chatgptClient || new ChatGPTAndroid(token);
                 text = await api.send(input, { context, projectId, model: effectiveModel,
                     reasoningEffort: task.reasoningEffort !== 'auto' && task.reasoningEffort || provider.reasoningEffort,
                     attachments: options.attachments, timeout: options.timeout });
