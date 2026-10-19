@@ -1,0 +1,1561 @@
+import React, { useState, useRef, useEffect, useMemo, useCallback, useContext } from 'react';
+import {
+  View,
+  StyleSheet,
+  ActivityIndicator,
+  TouchableOpacity,
+  Text,
+  StatusBar,
+  Dimensions,
+  Alert,
+  Modal,
+  TextInput,
+  Switch,
+  BackHandler,
+} from 'react-native';
+import { WebView } from 'react-native-webview';
+import { Ionicons } from '@expo/vector-icons';
+import { KeepAwake } from '../reader/optionalModules';
+import { useSafeAreaInsets } from 'react-native-safe-area-context';
+import AsyncStorage from '@react-native-async-storage/async-storage';
+import api, { incrementView } from '../services/api';
+import CommentsSection from '../components/CommentsSection';
+import { AuthContext } from '../context/AuthContext';
+import { useToast } from '../context/ToastContext';
+import { getOfflineChapterContent } from '../services/offlineStorage';
+import buildWorShell from '../reader/worShell';
+import {
+    loadWordsStore, saveWordsStore, novelScopeOf, effectiveTerms,
+    replaceTermsInText, buildColoredTerms, buildColoredRegexSources,
+} from '../reader/wordsStore';
+
+const { height: SCREEN_HEIGHT } = Dimensions.get('window');
+
+// ---------- Content helpers (encryption fully removed) ----------
+// The server now serves chapter content as PLAIN TEXT. The only remaining
+// decryption here is a read-only compatibility shim for OLD offline downloads
+// that were saved while the app still encrypted chapter content.
+const LEGACY_SECRET = "Z3uS_N0v3l_2026_S3cr3t_K3y";
+const LEGACY_B64_RE = /^[A-Za-z0-9+\/=]+$/;
+
+const legacyDecrypt = (encoded) => {
+    try {
+        const trimmed = (encoded || '').trim();
+        if (trimmed.length < 40 || !LEGACY_B64_RE.test(trimmed)) return null;
+        const chars = 'ABCDEFGHIJKLMNOPQRSTUVWXYZabcdefghijklmnopqrstuvwxyz0123456789+/=';
+        let output = '';
+        let i = 0;
+        const str = trimmed.replace(/=+$/, '');
+        while (i < str.length) {
+            const a = chars.indexOf(str.charAt(i++));
+            const b = chars.indexOf(str.charAt(i++));
+            const c = chars.indexOf(str.charAt(i++));
+            const d = chars.indexOf(str.charAt(i++));
+            if (a !== -1 && b !== -1) {
+                output += String.fromCharCode((a << 2) | (b >> 4));
+                if (c !== -1) {
+                    output += String.fromCharCode(((b & 15) << 4) | (c >> 2));
+                    if (d !== -1) output += String.fromCharCode(((c & 3) << 6) | d);
+                }
+            }
+        }
+        let result = "";
+        for (let j = 0; j < output.length; j++) {
+            let charCode = output.charCodeAt(j);
+            charCode = (charCode - 3 + 256) % 256;
+            const offset = (j * 7) % 13;
+            charCode = (charCode - offset + 256) % 256;
+            charCode = charCode ^ LEGACY_SECRET.charCodeAt(j % LEGACY_SECRET.length);
+            result += String.fromCharCode(charCode);
+        }
+        const decoded = decodeURIComponent(result);
+        if (/[\u0600-\u06FF]/.test(decoded) || /[A-Za-z]{4,}/.test(decoded)) return decoded;
+        return null;
+    } catch (e) {
+        return null;
+    }
+};
+
+// Converts any legacy-encrypted blob to plain text; passes everything else through.
+const normalizeContent = (raw) => {
+    if (!raw) return "";
+    const trimmed = String(raw).trim();
+    if (!/[\u0600-\u06FF]/.test(trimmed) && LEGACY_B64_RE.test(trimmed) && trimmed.length > 40) {
+        const legacy = legacyDecrypt(trimmed);
+        if (legacy) return legacy;
+    }
+    return raw;
+};
+
+// Escape text for safe embedding in HTML text nodes (quotes are intentionally kept).
+const escapeHtmlText = (text) => String(text || '')
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;');
+
+// Safe word/phrase replacement that never corrupts neighbouring Arabic words
+// (word-boundary aware, '$'-safe) — fixes "letter remnants of deleted words".
+const safeReplaceAll = (content, original, replacement) => {
+    try {
+        if (!original) return content;
+        const escaped = String(original).replace(/[.*+?${}()|[\]\\]/g, '\\$&');
+        const safeRepl = String(replacement == null ? '' : replacement).replace(/\$/g, '$$$$');
+        if (/^[A-Za-z0-9]/.test(original)) {
+            return content.replace(new RegExp('\\b' + escaped + '\\b', 'g'), safeRepl);
+        }
+        try {
+            const re = new RegExp('(?<![\\u0600-\\u06FF\\w])' + escaped + '(?![\\u0600-\\u06FF\\w])', 'g');
+            return content.replace(re, safeRepl);
+        } catch (e) {
+            return content.replace(new RegExp(escaped, 'g'), safeRepl);
+        }
+    } catch (e) {
+        return content;
+    }
+};
+
+// Quote-mark pairs used by the coloring features (brackets / markdown inner marks)
+const STYLE_MARKS = {
+    guillemets: ['«', '»'],
+    curly: ['“', '”'],
+    straight: ['"', '"'],
+    single: ['‘', '’'],
+};
+
+const escapeRegex = (s) => String(s).replace(/[.*+?^${}()|[\]\\]/g, '\\$&');
+
+// Process a single content line: brackets / markdown / dialogue / custom marks.
+// SINGLE-PASS: one combined regex runs over the ESCAPED text and every match is
+// wrapped exactly once. The previous sequential passes fed generated HTML (with
+// attribute quotes like class="...") back into the dialogue regex, which wrapped
+// those quotes and corrupted the markup — leaking fragments such as `"bmark">[...]`
+// into the visible chapter text. One pass makes that structurally impossible.
+const processLineHTML = (line, S) => {
+    const text = escapeHtmlText(line);
+
+    // Dialogue pair pattern (quote marks chosen by the user)
+    let dialogueSrc;
+    if (S.selectedQuoteStyle === 'guillemets') dialogueSrc = '«[^»]*»';
+    else if (S.selectedQuoteStyle === 'curly') dialogueSrc = '“[^”]*”';
+    else if (S.selectedQuoteStyle === 'straight') dialogueSrc = '"[^"]*"';
+    else if (S.selectedQuoteStyle === 'single') dialogueSrc = "['‘][^'’]*['’]";
+    else dialogueSrc = '[“"«][^”"»]*[”"»]';
+
+    const alternatives = [
+        '\\[[^\\]\\n]*\\]',   // brackets [...]
+        '\\*\\*[\\s\\S]*?\\*\\*', // markdown bold **...**
+        dialogueSrc,               // dialogue quote pair
+    ];
+
+    // Custom marks are escaped for HTML first (so marks like "<<" work) then for regex
+    let customOpen = '', customClose = '';
+    if (S.customOpenMark && S.customOpenMark.trim() && S.customCloseMark && S.customCloseMark.trim()) {
+        customOpen = escapeHtmlText(S.customOpenMark.trim());
+        customClose = escapeHtmlText(S.customCloseMark.trim());
+        alternatives.push(escapeRegex(customOpen) + '[\\s\\S]*?' + escapeRegex(customClose));
+    }
+
+    // Colored replacement terms ("تلوين البديل") join the SAME single pass so the
+    // generated span markup can never be re-scanned by the other patterns.
+    const colored = Array.isArray(S.colored) ? S.colored : [];
+    colored.forEach(c => alternatives.push(c.src));
+
+    let re;
+    try { re = new RegExp(alternatives.join('|'), 'g'); } catch (e) { return text; }
+
+    const bracketMarks = STYLE_MARKS[S.selectedBracketStyle] || null;
+    const markdownMarks = STYLE_MARKS[S.selectedMarkdownStyle] || null;
+
+    return text.replace(re, (m) => {
+        // colored replacement term (checked first so it always wins)
+        for (let ci = 0; ci < colored.length; ci++) {
+            if (m === colored[ci].escaped) {
+                return `<span class="wor-rep-colored" style="color:${colored[ci].color}">${m}</span>`;
+            }
+        }
+        // custom marks first (user-chosen delimiters take precedence)
+        if (customOpen && m.startsWith(customOpen) && m.endsWith(customClose)) {
+            const inner = m.slice(customOpen.length, m.length - customClose.length);
+            return `<span class="custom-formatted"><span class="cmark">${customOpen}</span>${inner}<span class="cmark">${customClose}</span></span>`;
+        }
+        // brackets [ ... ]
+        if (m.charAt(0) === '[' && m.charAt(m.length - 1) === ']') {
+            const inner = m.slice(1, -1);
+            const innerStart = bracketMarks ? `<span class="bq-style">${escapeHtmlText(bracketMarks[0])}</span>` : '';
+            const innerEnd = bracketMarks ? `<span class="bq-style">${escapeHtmlText(bracketMarks[1])}</span>` : '';
+            return `<span class="bracket-formatted"><span class="bmark">[</span>${innerStart}${inner}${innerEnd}<span class="bmark">]</span></span>`;
+        }
+        // markdown bold ** ... **
+        if (m.startsWith('**') && m.endsWith('**') && m.length > 4) {
+            const inner = m.slice(2, -2);
+            const qStart = markdownMarks ? `<span class="mq-style">${escapeHtmlText(markdownMarks[0])}</span>` : '';
+            const qEnd = markdownMarks ? `<span class="mq-style">${escapeHtmlText(markdownMarks[1])}</span>` : '';
+            return `<span class="cm-markdown-bold"><span class="mmark">**</span>${qStart}${inner}${qEnd}<span class="mmark">**</span></span>`;
+        }
+        // dialogue quote pair
+        const open = m.charAt(0);
+        const close = m.charAt(m.length - 1);
+        const inner = m.length > 2 ? m.slice(1, -1) : '';
+        return `<span class="cm-dialogue-text"><span class="qmark">${open}</span>${inner}<span class="qmark">${close}</span></span>`;
+    });
+};
+
+// Build one chapter <section> in the Galaxy reading-page style
+const buildWorSectionHTML = (sec, idx, S) => {
+    const style = sec.copyrightStyles || {};
+    const copyrightCSS = `color:${style.color || '#888'};opacity:${style.opacity || 1};text-align:${style.alignment || 'center'};font-weight:${style.isBold ? '700' : '400'};font-size:${style.fontSize || 14}px;line-height:1.6`;
+    const lines = (sec.content || '').split('\n').filter(line => line.trim() !== '');
+    const paragraphs = lines.map(line => `<p>${processLineHTML(line, S)}</p>`).join('');
+    const sepHTML = idx > 0 ? `<div class="wor-chapter-sep"><span class="sep-orn">◆</span></div>` : '';
+    const titleHTML = `<div class="wor-chapter-title-block${idx > 0 ? ' wor-chapter-title-block--sub' : ''}">${escapeHtmlText(sec.title || '')}</div>`;
+    const customSep = idx === 0 && S.enableSeparator ? `<div class="wor-custom-sep">${escapeHtmlText(S.separatorText)}</div>` : '';
+    const startHTML = sec.copyrightStart ? `<div class="wor-app-copyright" style="${copyrightCSS}">${escapeHtmlText(sec.copyrightStart)}</div><div class="wor-chapter-divider"></div>` : '';
+    const endHTML = sec.copyrightEnd ? `<div class="wor-chapter-divider"></div><div class="wor-app-copyright" style="${copyrightCSS}">${escapeHtmlText(sec.copyrightEnd)}</div>` : '';
+    return `<section class="wor-chapter-sec" data-ch="${sec.number}">${sepHTML}${titleHTML}${customSep}${startHTML}<div>${paragraphs}</div>${endHTML}</section>`;
+};
+
+// ----- Default reader settings (Galaxy reader defaults) -----
+const DEFAULT_SETTINGS = {
+    fontSize: 18,
+    lineHeight: 2.3,
+    wordSpacing: 0,
+    brightness: 1.05,
+    fontWeight: '400',
+    direction: 'rtl',
+    fontValue: 'default',
+    bgColor: '#000000',
+    textColor: '#ffffff',
+    accent: '#808080',
+    bgPreset: 'black',
+    customColors: false,
+    // advanced formatting
+    enableDialogue: false, dialogueColor: '#4ade80', dialogueSize: 100,
+    hideQuotes: false, selectedQuoteStyle: 'all',
+    enableMarkdown: false, markdownColor: '#ffffff', markdownSize: 100, hideMarkdownMarks: false, selectedMarkdownStyle: 'all',
+    enableBracket: false, bracketColor: '#3b82f6', bracketSize: 110, hideBracketMarks: false, selectedBracketStyle: 'all',
+    enableCustom: false, customOpenMark: '', customCloseMark: '', customColor: '#f97316', customSize: 105, hideCustomMarks: false,
+    // tools
+    showProgressBar: true,
+    progressBarColor: '#00ffff',
+    continuousMode: false,
+    autoScroll: false,
+    ttsEnabled: false,
+    keepAwake: false,
+    hideTitle: false,
+    tapToToggle: true,
+    enableSeparator: true,
+    separatorText: '________________________________________',
+    dockOpen: true,
+};
+
+// old font ids -> Galaxy font values (settings migration)
+const LEGACY_FONT_MAP = { Cairo: 'cairo', Amiri: 'amiri', Noto: 'noto-kufi-arabic', Geeza: 'default', Arial: 'default', Times: 'default' };
+
+// Theme cycle for the topbar toggle
+const THEME_CYCLE = [
+    { bgPreset: 'black', bgColor: '#000000', textColor: '#ffffff' },
+    { bgPreset: '__light__', bgColor: '#f3efe7', textColor: '#1c1c1c' },
+    { bgPreset: 'soft', bgColor: '#16181d', textColor: '#eef1f6' },
+    { bgPreset: 'charcoal', bgColor: '#232323', textColor: '#f3f3f3' },
+];
+
+const isLightColor = (hex) => {
+    const h = String(hex || '#000000').replace('#', '');
+    const full = h.length === 3 ? h.split('').map(c => c + c).join('') : h;
+    const n = parseInt(full || '000000', 16);
+    const r = (n >> 16) & 255, g = (n >> 8) & 255, b = n & 255;
+    return (0.299 * r + 0.587 * g + 0.114 * b) > 150;
+};
+
+// Web (Galaxy) reader — rendered inside the 'Reader' route by the structure dispatcher.
+// See ReaderScreen.js: admins can switch the reader engine between this WebView
+// structure and the native (classic) one from app settings.
+export default function WebReaderScreen({ route, navigation }) {
+    const { userInfo } = useContext(AuthContext);
+    const { showToast } = useToast();
+    const { novel, chapterId, isOfflineMode, availableChapters } = route.params;
+
+    // ----- data state -----
+    const [chapter, setChapter] = useState(null);
+    const chapterRef = useRef(null);
+    useEffect(() => { chapterRef.current = chapter; }, [chapter]);
+    const [loading, setLoading] = useState(true);
+    const [realTotalChapters, setRealTotalChapters] = useState(novel.chaptersCount || 0);
+    const [commentCount, setCommentCount] = useState(0);
+    const [authorProfile, setAuthorProfile] = useState(null);
+    const [isFavorite, setIsFavorite] = useState(false);
+
+    // ----- settings (single object, persisted in @reader_settings_v4) -----
+    const [settings, setSettings] = useState(DEFAULT_SETTINGS);
+    const settingsRef = useRef(DEFAULT_SETTINGS);
+    const setSettingsBoth = useCallback((patchOrFn) => {
+        setSettings(prev => {
+            const patch = typeof patchOrFn === 'function' ? patchOrFn(prev) : patchOrFn;
+            const next = { ...prev, ...patch };
+            settingsRef.current = next;
+            return next;
+        });
+    }, []);
+
+    // ----- replacements (Galaxy: هذه الرواية / كل الروايات) -----
+    const wordsStoreRef = useRef({ novel: {}, global: [] });
+    const [wordsVersion, setWordsVersion] = useState(0);
+
+    // ----- admin: cleaner -----
+    const [cleanerWords, setCleanerWords] = useState([]);
+    const [newCleanerWord, setNewCleanerWord] = useState('');
+    const [cleanerEditingId, setCleanerEditingId] = useState(null);
+    const [cleanerOldWord, setCleanerOldWord] = useState('');
+    const [cleaningLoading, setCleaningLoading] = useState(false);
+    const [showCleaner, setShowCleaner] = useState(false);
+
+    // ----- admin: copyright -----
+    const [copyrightStartText, setCopyrightStartText] = useState('');
+    const [copyrightEndText, setCopyrightEndText] = useState('');
+    const [copyrightLoading, setCopyrightLoading] = useState(false);
+    const [copyrightStyle, setCopyrightStyle] = useState({ color: '#888888', opacity: 1, alignment: 'center', isBold: true, fontSize: 14 });
+    const [copyrightFrequency, setCopyrightFrequency] = useState('always');
+    const [copyrightEveryX, setCopyrightEveryX] = useState('5');
+    const [showCopyright, setShowCopyright] = useState(false);
+
+    // ----- chapters list -----
+    const [chaptersList, setChaptersList] = useState([]);
+
+    // ----- continuous scroll -----
+    const [extraSections, setExtraSections] = useState([]);
+    const [loadingNext, setLoadingNext] = useState(false);
+    const [endReached, setEndReached] = useState(false);
+    const [currentViewedChapter, setCurrentViewedChapter] = useState(parseInt(chapterId) || 1);
+    const [errorInfo, setErrorInfo] = useState(null);
+
+    const [showComments, setShowComments] = useState(false);
+    // Mirrors the shell's dock state — the NATIVE system status bar (battery bar)
+    // hides while the dock is hidden (immersive reading) and shows when it opens.
+    // The shell boots with the dock open, hence the default.
+    const [dockOpen, setDockOpen] = useState(true);
+
+    const insets = useSafeAreaInsets();
+    const webViewRef = useRef(null);
+    const webReadyRef = useRef(false);
+    const webQueueRef = useRef([]);
+    const scrollSaveTimer = useRef(null);
+    const pendingRestoreRef = useRef(0);
+    const loadingNextRef = useRef(false);
+    const autoScrollNextRef = useRef(false);
+
+    const novelId = novel._id || novel.id || novel.novelId;
+    const isAdmin = userInfo?.role === 'admin';
+
+    // ========================= WebView bridge =========================
+    const postToWeb = useCallback((obj) => {
+        if (!webViewRef.current) return;
+        if (!webReadyRef.current) {
+            webQueueRef.current.push(obj);
+            return;
+        }
+        try {
+            const json = JSON.stringify(obj);
+            webViewRef.current.injectJavaScript(`window.__wor && window.__wor.receive(${json}); true;`);
+        } catch (e) { }
+    }, []);
+
+    const flushWebQueue = useCallback(() => {
+        webReadyRef.current = true;
+        const queue = webQueueRef.current;
+        webQueueRef.current = [];
+        queue.forEach(obj => postToWeb(obj));
+    }, [postToWeb]);
+
+    const sendSettings = useCallback((s) => {
+        postToWeb({ kind: 'settings', settings: { ...s, customColors: s.customColors } });
+    }, [postToWeb]);
+
+    const sendChapters = useCallback((list) => {
+        postToWeb({ kind: 'chapters', list: list || chaptersListRef.current });
+    }, [postToWeb]);
+
+    const chaptersListRef = useRef([]);
+    useEffect(() => { chaptersListRef.current = chaptersList; }, [chaptersList]);
+
+    const sendWords = useCallback(() => {
+        const store = wordsStoreRef.current;
+        postToWeb({
+            kind: 'words',
+            items: { novel: novelScopeOf(store, novelId), global: store.global || [] },
+        });
+    }, [postToWeb, novelId]);
+
+    const sendFav = useCallback((value) => {
+        postToWeb({ kind: 'fav', value });
+    }, [postToWeb]);
+
+    const sendChapterToWeb = useCallback((chapterData, opts = {}) => {
+        if (!chapterData) return;
+        const S = { ...settingsRef.current, colored: coloredRef.current };
+        const number = opts.number || parseInt(chapterId) || 1;
+        const sorted = (availableChapters && availableChapters.length > 0)
+            ? [...availableChapters].sort((a, b) => a - b)
+            : null;
+        let hasPrev = true, hasNext = true, position = number, total = realTotalChapters;
+        if (sorted) {
+            const idx = sorted.indexOf(number);
+            hasPrev = idx > 0;
+            hasNext = idx !== -1 && idx < sorted.length - 1;
+            position = idx + 1;
+            total = sorted.length;
+        } else {
+            hasPrev = number > 1;
+            hasNext = !(realTotalChapters > 0 && number >= realTotalChapters);
+        }
+        const percent = total > 0 ? Math.min(100, Math.round((position / total) * 100)) : 0;
+        const html = buildWorSectionHTML({
+            number,
+            title: chapterData.title,
+            content: chapterData.processedContent || '',
+            copyrightStart: chapterData.copyrightStart,
+            copyrightEnd: chapterData.copyrightEnd,
+            copyrightStyles: chapterData.copyrightStyles,
+        }, 0, S);
+        postToWeb({
+            kind: 'chapter',
+            number,
+            title: chapterData.title || `فصل ${number}`,
+            novelTitle: novel.title || '',
+            total,
+            percent: `${percent}%`,
+            percentValue: percent,
+            hasPrev,
+            hasNext,
+            html,
+            commentCount: commentCountRef.current,
+            showCommentsButton: !isOfflineMode,
+            authorCard: authorProfileRef.current
+                ? { name: authorProfileRef.current.name || novel.author || '', avatar: authorProfileRef.current.picture || '', banner: authorProfileRef.current.banner || '' }
+                : null,
+            isFavorite: isFavoriteRef.current,
+            // keepScroll: re-render the chapter (e.g. after a formatting change)
+            // without yanking the reader away from the position they are at
+            scrollOffset: opts.keepScroll ? 0 : (pendingRestoreRef.current || 0),
+            keepScroll: !!opts.keepScroll,
+        });
+    }, [postToWeb, novel.title, availableChapters, realTotalChapters, isOfflineMode]);
+
+    const commentCountRef = useRef(0);
+    useEffect(() => {
+        commentCountRef.current = commentCount;
+        postToWeb({ kind: 'commentCount', count: commentCount });
+    }, [commentCount]); // eslint-disable-line react-hooks/exhaustive-deps
+    const authorProfileRef = useRef(null);
+    useEffect(() => { authorProfileRef.current = authorProfile; }, [authorProfile]);
+    const isFavoriteRef = useRef(false);
+    useEffect(() => { isFavoriteRef.current = isFavorite; }, [isFavorite]);
+
+    // ========================= settings persistence =========================
+    const saveSettings = async (patch) => {
+        try {
+            const current = await AsyncStorage.getItem('@reader_settings_v4');
+            const existing = current ? JSON.parse(current) : {};
+            await AsyncStorage.setItem('@reader_settings_v4', JSON.stringify({ ...existing, ...patch }));
+        } catch (e) { }
+    };
+
+    const applySettingsPatch = useCallback((patch, persist = true) => {
+        setSettingsBoth(prev => ({ ...prev, ...patch }));
+        if (persist) saveSettings(patch);
+        postToWeb({ kind: 'settings', settings: patch });
+    }, [postToWeb, setSettingsBoth]);
+
+    const loadSettings = async () => {
+        try {
+            const saved = await AsyncStorage.getItem('@reader_settings_v4');
+            if (saved) {
+                const p = JSON.parse(saved);
+                const patch = {};
+                // galaxy keys
+                ['fontSize', 'lineHeight', 'wordSpacing', 'brightness', 'fontWeight', 'direction', 'fontValue',
+                    'bgColor', 'textColor', 'accent', 'bgPreset', 'customColors',
+                    'enableDialogue', 'dialogueColor', 'dialogueSize', 'hideQuotes', 'selectedQuoteStyle',
+                    'enableMarkdown', 'markdownColor', 'markdownSize', 'hideMarkdownMarks', 'selectedMarkdownStyle',
+                    'enableBracket', 'bracketColor', 'bracketSize', 'hideBracketMarks', 'selectedBracketStyle',
+                    'enableCustom', 'customOpenMark', 'customCloseMark', 'customColor', 'customSize', 'hideCustomMarks',
+                    'showProgressBar', 'progressBarColor', 'continuousMode', 'autoScroll', 'keepAwake',
+                    'hideTitle', 'tapToToggle', 'enableSeparator', 'separatorText', 'dockOpen']
+                    .forEach(k => { if (p[k] !== undefined) patch[k] = p[k]; });
+                // legacy v4 keys
+                if (p.textBrightness !== undefined && patch.brightness === undefined) patch.brightness = p.textBrightness;
+                if (p.fontId && patch.fontValue === undefined) patch.fontValue = LEGACY_FONT_MAP[p.fontId] || 'default';
+                setSettingsBoth(prev => ({ ...prev, ...patch }));
+                settingsRef.current = { ...settingsRef.current, ...patch };
+            }
+        } catch (e) { }
+    };
+
+    // ========================= replacements (Galaxy words) =========================
+    // Two scopes like Galaxy: "هذه الرواية" (per novel) and "كل الروايات" (global).
+    const loadWords = async () => {
+        const store = await loadWordsStore(novelId, novel.title);
+        wordsStoreRef.current = store;
+        setWordsVersion(v => v + 1);
+        sendWords();
+    };
+
+    const wordsItemsPayload = () => ({
+        novel: novelScopeOf(wordsStoreRef.current, novelId),
+        global: wordsStoreRef.current.global || [],
+    });
+
+    const wordsAction = useCallback((msg) => {
+        const scope = msg.scope === 'global' ? 'global' : 'novel';
+        const listFor = () => (scope === 'global'
+            ? (wordsStoreRef.current.global || [])
+            : novelScopeOf(wordsStoreRef.current, novelId));
+        const commit = async (next, toastText) => {
+            if (scope === 'global') wordsStoreRef.current.global = next;
+            else wordsStoreRef.current.novel[String(novelId || 'unknown')] = next;
+            await saveWordsStore(wordsStoreRef.current);
+            setWordsVersion(v => v + 1);
+            sendWords();
+            postToWeb({ kind: 'wordsSaved', items: wordsItemsPayload(), toast: toastText });
+        };
+        const list = listFor();
+        if (msg.action === 'addRep') {
+            const original = String(msg.original || '').trim();
+            if (!original) { showToast('اكتب الكلمة الأصلية أولاً', 'warning'); return; }
+            commit([...list, {
+                id: Date.now().toString(36) + Math.random().toString(36).slice(2, 8),
+                original,
+                replacement: String(msg.replacement || '').trim(),
+                exact: !!msg.exact,
+                color: (typeof msg.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(msg.color)) ? msg.color : null,
+            }], 'تمت إضافة الكلمة');
+        } else if (msg.action === 'updateRep') {
+            const idx = list.findIndex(r => r.id === msg.id);
+            if (idx === -1) { showToast('لم يتم العثور على الكلمة', 'warning'); return; }
+            const next = list.slice();
+            next[idx] = {
+                ...next[idx],
+                original: String(msg.original || '').trim(),
+                replacement: String(msg.replacement || '').trim(),
+                exact: !!msg.exact,
+                color: (typeof msg.color === 'string' && /^#[0-9a-fA-F]{3,8}$/.test(msg.color)) ? msg.color : null,
+            };
+            commit(next, 'تم تحديث الكلمة');
+        } else if (msg.action === 'deleteRep') {
+            commit(list.filter(r => r.id !== msg.id), 'تم حذف الكلمة');
+        } else if (msg.action === 'clearScope') {
+            commit([], 'تم مسح الكلمات');
+        }
+    }, [novelId, postToWeb, sendWords, showToast]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const wordsTerms = useMemo(() => effectiveTerms(wordsStoreRef.current, novelId), [wordsVersion, novelId]); // eslint-disable-line react-hooks/exhaustive-deps
+    const coloredTermsSources = useMemo(
+        () => buildColoredRegexSources(buildColoredTerms(wordsTerms)),
+        [wordsTerms]
+    );
+    const coloredRef = useRef([]);
+    useEffect(() => { coloredRef.current = coloredTermsSources; }, [coloredTermsSources]);
+
+    // Re-render the open chapter right after a word change (like Galaxy:
+    // the replacement takes effect while reading, without leaving the chapter)
+    const wordsInitRef = useRef(0);
+    useEffect(() => {
+        wordsInitRef.current += 1;
+        if (wordsInitRef.current <= 1) return; // initial load — the chapter send is handled elsewhere
+        const ch = chapterRef.current;
+        if (!ch) return;
+        const processed = applyReplacements(ch.content || '');
+        setTimeout(() => sendChapterToWeb({ ...ch, processedContent: processed }, { keepScroll: true }), 0);
+    }, [wordsVersion]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    const applyReplacements = useCallback((raw) => (
+        replaceTermsInText(normalizeContent(raw), wordsTerms)
+    ), [wordsTerms]);
+
+    const getProcessedContent = useMemo(() => (chapter ? applyReplacements(chapter.content) : ''), [chapter, applyReplacements]);
+
+    const processedExtraSections = useMemo(() => (
+        extraSections.map(sec => ({ ...sec, content: applyReplacements(sec.rawContent) }))
+    ), [extraSections, applyReplacements]);
+
+    // ========================= scroll persistence =========================
+    const scrollKeyFor = (chNum) => `@reader_scroll_v1_${novelId}_${chNum}`;
+    // Novel-level marker of the EXACT position (chapter + offset inside it).
+    // Fresher than the server record — the novel page uses it for "استئناف القراءة"
+    // so progress is never lost, even if the server update fails.
+    const lastPosKeyFor = () => `@reader_last_pos_v1_${novelId}`;
+
+    // Latest live position (kept in refs so it can be flushed synchronously on exit)
+    const lastScrollPosRef = useRef(null);
+    const sectionTitlesRef = useRef({});
+
+    const saveScrollPosition = async (chNum, offset, globalOffset) => {
+        try {
+            if (!chNum || offset == null || offset < 0) return;
+            const payload = JSON.stringify({ offset: Math.round(offset), global: Math.round(globalOffset || 0), v: 2, savedAt: Date.now() });
+            await AsyncStorage.setItem(scrollKeyFor(chNum), payload);
+            await AsyncStorage.setItem(lastPosKeyFor(), JSON.stringify({ chapter: parseInt(chNum), offset: Math.round(offset), savedAt: Date.now() }));
+        } catch (e) { }
+    };
+
+    const loadScrollPosition = async (chNum) => {
+        try {
+            const raw = await AsyncStorage.getItem(scrollKeyFor(chNum));
+            if (!raw) return 0;
+            const parsed = JSON.parse(raw);
+            // v1 saves stored a GLOBAL page offset — treating it as an in-chapter
+            // offset would overshoot to the end of the document (and open the next
+            // chapter). Ignore legacy saves: resume lands at the top of the saved
+            // chapter instead of at its end.
+            if (parsed?.v !== 2) return 0;
+            return parsed?.offset || 0;
+        } catch (e) { return 0; }
+    };
+
+    const queueSaveScroll = (chNum, offset, globalOffset) => {
+        if (!settingsRef.current.continuousMode && parseInt(chNum) !== parseInt(chapterId)) return;
+        if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
+        scrollSaveTimer.current = setTimeout(() => saveScrollPosition(chNum, offset, globalOffset), 600);
+    };
+
+    const clearScrollFor = async (chNum) => {
+        try { await AsyncStorage.removeItem(scrollKeyFor(chNum)); } catch (e) { }
+    };
+
+    // Resolve the title of whichever chapter the user is actually viewing
+    // (the anchor chapter OR any appended continuous-mode section).
+    const titleForChapter = (chNum) => {
+        const n = parseInt(chNum);
+        if (sectionTitlesRef.current[n]) return sectionTitlesRef.current[n];
+        if (chapterRef.current && n === parseInt(chapterId)) return chapterRef.current.title;
+        const fromList = (chaptersListRef.current || []).find(c => parseInt(c.number) === n);
+        if (fromList) return fromList.title;
+        return `فصل ${n}`;
+    };
+
+    const updateProgressOnServer = async (currentChapter, chapterNum) => {
+        if (!currentChapter || isOfflineMode) return;
+        try {
+            await api.post('/api/novel/update', {
+                novelId: novelId,
+                title: novel.title,
+                cover: novel.cover,
+                author: novel.author || novel.translator,
+                lastChapterId: parseInt(chapterNum) || parseInt(chapterId),
+                lastChapterTitle: titleForChapter(chapterNum)
+            });
+        } catch (error) { }
+    };
+
+    // ========================= fetching =========================
+    const fetchChapters = async () => {
+        try {
+            // /chapters-list is the real endpoint (the old /chapters route never
+            // existed — that is why the in-reader chapter list stayed empty).
+            const res = await api.get(`/api/novels/${novelId}/chapters-list`, { params: { page: 1, limit: 100000, sort: 'asc' } });
+            const payload = res.data;
+            const list = Array.isArray(payload) ? payload : (payload?.chapters || []);
+            if (Array.isArray(list) && list.length > 0) {
+                setChaptersList(list);
+                sendChapters(list);
+            }
+        } catch (error) { }
+    };
+
+    const fetchAuthorData = async () => {
+        if (novel.authorEmail) {
+            try {
+                const res = await api.get(`/api/user/stats?email=${novel.authorEmail}`);
+                if (res.data && res.data.user) setAuthorProfile(res.data.user);
+            } catch (e) { }
+        }
+    };
+
+    const fetchCleanerWords = async () => {
+        try {
+            const res = await api.get('/api/admin/cleaner');
+            setCleanerWords(res.data);
+        } catch (e) { }
+    };
+
+    const fetchCopyrights = async () => {
+        try {
+            const res = await api.get('/api/admin/copyright');
+            setCopyrightStartText(res.data.startText || '');
+            setCopyrightEndText(res.data.endText || '');
+            if (res.data.styles) setCopyrightStyle(prev => ({ ...prev, ...res.data.styles }));
+            if (res.data.frequency) setCopyrightFrequency(res.data.frequency);
+            if (res.data.everyX) setCopyrightEveryX(res.data.everyX.toString());
+            if (res.data.chapterSeparatorText) setSettingsBoth(prev => ({ ...prev, separatorText: res.data.chapterSeparatorText }));
+            if (res.data.enableChapterSeparator !== undefined) setSettingsBoth(prev => ({ ...prev, enableSeparator: res.data.enableChapterSeparator }));
+        } catch (e) { }
+    };
+
+    const handleSaveCopyrights = async () => {
+        setCopyrightLoading(true);
+        try {
+            await api.post('/api/admin/copyright', {
+                startText: copyrightStartText,
+                endText: copyrightEndText,
+                styles: copyrightStyle,
+                frequency: copyrightFrequency,
+                everyX: parseInt(copyrightEveryX) || 5,
+                enableChapterSeparator: settingsRef.current.enableSeparator,
+                chapterSeparatorText: settingsRef.current.separatorText
+            });
+            showToast("تم حفظ إعدادات الحقوق", "success");
+            fetchChapter();
+        } catch (error) {
+            showToast("فشل الحفظ", "error");
+        } finally {
+            setCopyrightLoading(false);
+        }
+    };
+
+    const fetchFavoriteStatus = async () => {
+        if (isOfflineMode) return;
+        try {
+            const res = await api.get(`/api/novel/status/${novelId}`);
+            if (res.data) {
+                setIsFavorite(!!res.data.isFavorite);
+                isFavoriteRef.current = !!res.data.isFavorite;
+                sendFav(!!res.data.isFavorite);
+            }
+        } catch (e) { }
+    };
+
+    const toggleFavorite = async () => {
+        if (isOfflineMode) { showToast('لا يمكن التعديل بدون إنترنت', 'warning'); return; }
+        const newStatus = !isFavoriteRef.current;
+        isFavoriteRef.current = newStatus;
+        setIsFavorite(newStatus);
+        sendFav(newStatus);
+        try {
+            await api.post('/api/novel/update', {
+                novelId, title: novel.title, cover: novel.cover, author: novel.author || novel.translator,
+                isFavorite: newStatus
+            });
+            showToast(newStatus ? 'تمت الإضافة للمفضلة' : 'تم الحذف من المفضلة', newStatus ? 'success' : 'info');
+        } catch (e) {
+            isFavoriteRef.current = !newStatus;
+            setIsFavorite(!newStatus);
+            sendFav(!newStatus);
+            showToast('فشلت العملية', 'error');
+        }
+    };
+
+    const fetchCommentCount = async () => {
+        try {
+            const res = await api.get(`/api/novels/${novelId}/comments?chapterNumber=${chapterId}`);
+            if (res.data && Array.isArray(res.data)) setCommentCount(res.data.length);
+        } catch (e) { }
+    };
+
+    const fetchChapter = async () => {
+        setLoading(true);
+        setErrorInfo(null);
+        setExtraSections([]);
+        setEndReached(false);
+        setLoadingNext(false);
+        loadingNextRef.current = false;
+        setCurrentViewedChapter(parseInt(chapterId) || 1);
+        try {
+            let chapterData = null;
+
+            const offlineData = await getOfflineChapterContent(novelId, chapterId);
+            if (offlineData) {
+                chapterData = offlineData;
+            }
+            else if (!isOfflineMode) {
+                const response = await api.get(`/api/novels/${novelId}/chapters/${chapterId}`);
+                chapterData = response.data;
+            } else {
+                throw new Error('الفصل غير متوفر بدون اتصال');
+            }
+
+            if (chapterData && chapterData.content) {
+                chapterData.content = normalizeContent(chapterData.content);
+            }
+
+            setChapter(chapterData);
+            if (chapterData) {
+                sectionTitlesRef.current = { ...sectionTitlesRef.current, [parseInt(chapterId) || 1]: chapterData.title || `فصل ${chapterId}` };
+            }
+            if (availableChapters) {
+                setRealTotalChapters(availableChapters.length);
+            } else if (chapterData.totalChapters) {
+                setRealTotalChapters(chapterData.totalChapters);
+            }
+
+            // Restore last scroll position for this chapter
+            const savedOffset = await loadScrollPosition(chapterId);
+            pendingRestoreRef.current = savedOffset;
+
+            // push to web
+            if (chapterData) {
+                const processed = applyReplacements(chapterData.content || '');
+                setTimeout(() => {
+                    sendChapterToWeb({ ...chapterData, processedContent: processed });
+                    sendSettings(settingsRef.current);
+                }, 0);
+            }
+
+            if (!isOfflineMode) {
+                incrementView(novelId, chapterId);
+                updateProgressOnServer(chapterData, chapterId);
+                fetchCommentCount();
+            }
+        } catch (error) {
+            const status = error?.response?.status;
+            let message = 'فشل تحميل الفصل. تحقق من اتصالك بالإنترنت ثم أعد المحاولة.';
+            if (status === 403) message = 'هذا الفصل غير متاح حالياً (خاص أو لم يُنشر بعد).';
+            else if (status === 404) message = 'الفصل غير موجود. ربما تم حذفه أو تغيير ترقيمه.';
+            else if (isOfflineMode) message = 'الفصل غير متوفر بدون اتصال. حمّله مسبقاً لتقرأه أوفلاين.';
+            setErrorInfo({ message, status });
+        } finally {
+            setLoading(false);
+        }
+    };
+
+    // ----- continuous scroll: fetch + append the NEXT chapter -----
+    const fetchNextChapter = async () => {
+        if (loadingNextRef.current || endReached) return;
+        const S = settingsRef.current;
+        if (!S.continuousMode) return;
+        const lastNum = extraSections.length > 0
+            ? extraSections[extraSections.length - 1].number
+            : parseInt(chapterId);
+        let nextNum = null;
+        if (availableChapters && availableChapters.length > 0) {
+            const sorted = [...availableChapters].sort((a, b) => a - b);
+            const idx = sorted.indexOf(lastNum);
+            if (idx !== -1 && idx < sorted.length - 1) nextNum = sorted[idx + 1];
+        } else {
+            const cand = lastNum + 1;
+            if (!(realTotalChapters > 0 && cand > realTotalChapters)) nextNum = cand;
+        }
+        if (nextNum === null) {
+            setEndReached(true);
+            postToWeb({ kind: 'endReached' });
+            return;
+        }
+        loadingNextRef.current = true;
+        setLoadingNext(true);
+        postToWeb({ kind: 'loadingNext', value: true });
+        try {
+            let nextData = null;
+            const off = await getOfflineChapterContent(novelId, nextNum);
+            if (off) nextData = off;
+            else if (!isOfflineMode) {
+                const response = await api.get(`/api/novels/${novelId}/chapters/${nextNum}`);
+                nextData = response.data;
+            }
+            if (!nextData || !nextData.content) {
+                setEndReached(true);
+                postToWeb({ kind: 'endReached' });
+                return;
+            }
+            const section = {
+                number: nextNum,
+                title: nextData.title || `فصل ${nextNum}`,
+                rawContent: normalizeContent(nextData.content),
+                copyrightStart: nextData.copyrightStart,
+                copyrightEnd: nextData.copyrightEnd,
+                copyrightStyles: nextData.copyrightStyles
+            };
+            sectionTitlesRef.current = { ...sectionTitlesRef.current, [nextNum]: section.title };
+            setExtraSections(prev => [...prev, section]);
+            const html = buildWorSectionHTML({
+                number: section.number,
+                title: section.title,
+                content: applyReplacements(section.rawContent),
+                copyrightStart: section.copyrightStart,
+                copyrightEnd: section.copyrightEnd,
+                copyrightStyles: section.copyrightStyles
+            }, 1, settingsRef.current);
+            postToWeb({ kind: 'appendChapter', number: nextNum, html });
+            if (autoScrollNextRef.current) {
+                autoScrollNextRef.current = false;
+                setTimeout(() => {
+                    // Re-check the target's offset on the next 2 animation frames —
+                    // with content-visibility the far section first renders with an
+                    // estimated height, so the first scrollTo may be slightly off.
+                    webViewRef.current?.injectJavaScript(`(function(){var n=0;(function go(){var el=document.querySelector('section[data-ch="${nextNum}"]'); if(!el) return; window.scrollTo({top: el.offsetTop - 8, behavior:'smooth'}); if(++n<3) requestAnimationFrame(go);})();})(); true;`);
+                }, 350);
+            }
+        } catch (e) {
+            setEndReached(true);
+            postToWeb({ kind: 'endReached' });
+        } finally {
+            loadingNextRef.current = false;
+            setLoadingNext(false);
+            postToWeb({ kind: 'loadingNext', value: false });
+        }
+    };
+
+    // ========================= navigation =========================
+    const navigateChapter = (targetId) => {
+        if (parseInt(targetId) === parseInt(chapterId)) return;
+        clearScrollFor(targetId);
+        setTimeout(() => {
+            navigation.replace('Reader', { novel, chapterId: targetId, isOfflineMode, availableChapters });
+        }, 120);
+    };
+
+    const navigateNextPrev = (offset) => {
+        const S = settingsRef.current;
+        // Continuous mode: "next" scrolls to the already-appended section or fetches it
+        if (S.continuousMode && offset > 0) {
+            const anchorNum = parseInt(chapterId) || 1;
+            const secNums = [anchorNum, ...processedExtraSections.map(x => x.number)];
+            const idx = secNums.indexOf(currentViewedChapter);
+            const nextSec = idx !== -1 ? secNums[idx + 1] : (processedExtraSections.length ? null : undefined);
+            if (nextSec) {
+                // Double-check the offset on the next frames (content-visibility
+                // renders the far section with an estimated height first).
+                webViewRef.current?.injectJavaScript(`(function(){var n=0;(function go(){var el=document.querySelector('section[data-ch="${nextSec}"]'); if(!el) return; window.scrollTo({top: el.offsetTop - 8, behavior:'smooth'}); if(++n<3) requestAnimationFrame(go);})();})(); true;`);
+                return;
+            }
+            if (endReached) {
+                showToast('أنت في آخر فصل متاح', 'info');
+                return;
+            }
+            autoScrollNextRef.current = true;
+            fetchNextChapter();
+            return;
+        }
+        if (availableChapters && availableChapters.length > 0) {
+            const currentNum = parseInt(chapterId);
+            const sortedAvailable = [...availableChapters].sort((a, b) => a - b);
+            const currentIndex = sortedAvailable.indexOf(currentNum);
+            if (currentIndex === -1) return;
+            const nextIndex = currentIndex + offset;
+            if (nextIndex >= 0 && nextIndex < sortedAvailable.length) {
+                const nextChapId = sortedAvailable[nextIndex];
+                if (offset > 0) clearScrollFor(nextChapId);
+                navigation.replace('Reader', { novel, chapterId: nextChapId, isOfflineMode, availableChapters });
+            } else {
+                showToast(offset > 0 ? 'أنت في آخر فصل منزل.' : 'أنت في أول فصل منزل.', 'info');
+            }
+        } else {
+            const nextNum = parseInt(chapterId) + offset;
+            if (offset < 0 && nextNum < 1) return;
+            if (offset > 0 && realTotalChapters > 0 && nextNum > realTotalChapters) {
+                showToast('أنت في آخر فصل متاح.', 'info');
+                return;
+            }
+            if (offset > 0) clearScrollFor(nextNum);
+            navigation.replace('Reader', { novel, chapterId: nextNum, isOfflineMode });
+        }
+    };
+
+    const handleThemeCycle = () => {
+        const S = settingsRef.current;
+        let idx = THEME_CYCLE.findIndex(t => t.bgPreset === S.bgPreset);
+        if (idx === -1) idx = THEME_CYCLE.findIndex(t => t.bgColor.toLowerCase() === String(S.bgColor).toLowerCase());
+        const next = THEME_CYCLE[(idx + 1) % THEME_CYCLE.length];
+        applySettingsPatch({
+            bgPreset: next.bgPreset,
+            bgColor: next.bgColor,
+            textColor: next.textColor,
+            customColors: false,
+        });
+    };
+
+    // ========================= admin tools =========================
+    const handleExecuteCleaner = async () => {
+        if (!newCleanerWord.trim()) {
+            Alert.alert('تنبيه', 'يرجى إدخال النص المراد حذفه');
+            return;
+        }
+        const executeAction = async () => {
+            setCleaningLoading(true);
+            try {
+                if (cleanerEditingId !== null && cleanerOldWord) {
+                    await api.put(`/api/admin/cleaner/${encodeURIComponent(cleanerOldWord)}`, { word: newCleanerWord.trim() });
+                    setCleanerEditingId(null);
+                    setCleanerOldWord('');
+                } else {
+                    await api.post('/api/admin/cleaner', { word: newCleanerWord.trim() });
+                }
+                setNewCleanerWord('');
+                await fetchCleanerWords();
+                showToast(cleanerEditingId !== null ? 'تم التحديث بنجاح' : 'تم الحذف من جميع الفصول بنجاح', 'success');
+                fetchChapter();
+            } catch (e) {
+                showToast('فشل تنفيذ العملية', 'error');
+            } finally {
+                setCleaningLoading(false);
+            }
+        };
+
+        if (cleanerEditingId !== null) {
+            Alert.alert('تأكيد التحديث', `سيتم تحديث "${cleanerOldWord}" إلى "${newCleanerWord.trim()}" في جميع الفصول.`, [
+                { text: 'إلغاء', style: 'cancel' },
+                { text: 'تحديث', style: 'destructive', onPress: executeAction }
+            ]);
+        } else {
+            Alert.alert('تأكيد الحذف الشامل', `سيتم حذف أي فقرة أو نص مطابق لـ "${newCleanerWord.trim()}" من جميع الفصول في السيرفر.`, [
+                { text: 'إلغاء', style: 'cancel' },
+                { text: 'تنفيذ الحذف', style: 'destructive', onPress: executeAction }
+            ]);
+        }
+    };
+
+    const handleDeleteCleaner = (item) => {
+        Alert.alert('حذف', 'هل تريد إزالة هذا النص من القائمة؟', [
+            { text: 'إلغاء' },
+            {
+                text: 'حذف', style: 'destructive', onPress: async () => {
+                    try {
+                        await api.delete(`/api/admin/cleaner/${encodeURIComponent(item)}`);
+                        fetchCleanerWords();
+                        if (newCleanerWord === item) {
+                            setNewCleanerWord('');
+                            setCleanerEditingId(null);
+                            setCleanerOldWord('');
+                        }
+                    } catch (e) { showToast('فشل الحذف', 'error'); }
+                }
+            }
+        ]);
+    };
+
+    const submitReport = async (msg) => {
+        try {
+            await api.post('/api/reports', {
+                novelId,
+                novelTitle: novel.title,
+                chapterNumber: parseInt(chapterId) || 1,
+                chapterTitle: chapter ? chapter.title : '',
+                types: msg.types || [],
+                details: msg.details || '',
+            });
+            showToast('تم إرسال البلاغ، شكراً لك!', 'success');
+        } catch (e) {
+            showToast('تعذر إرسال البلاغ الآن', 'error');
+        }
+    };
+
+    // ========================= keep awake =========================
+    useEffect(() => {
+        if (settings.keepAwake) {
+            KeepAwake.activateKeepAwakeAsync().catch(() => { });
+        } else {
+            KeepAwake.deactivateKeepAwake().catch(() => { });
+        }
+    }, [settings.keepAwake]);
+
+    // ========================= init =========================
+    const backPressPendingRef = useRef(false);
+    const webAliveRef = useRef(0);
+
+    useEffect(() => {
+        (async () => {
+            // الإعدادات والكلمات المستبدلة أولاً حتى تكون جاهزة قبل أول جلب للفصل
+            await loadSettings();
+            await loadWords();
+            if (!isOfflineMode) {
+                fetchAuthorData();
+                fetchFavoriteStatus();
+                if (isAdmin) {
+                    fetchCleanerWords();
+                    fetchCopyrights();
+                }
+            }
+            // جلب الفصل عند فتح القارئ (كان مفقوداً بعد إعادة التصميم → شاشة تحميل للأبد)
+            fetchChapter();
+        })();
+        const backHandler = BackHandler.addEventListener('hardwareBackPress', () => {
+            // if the web side has been silent for a while (JS failed to boot), leave directly
+            if (Date.now() - webAliveRef.current > 4000 && webAliveRef.current !== 0) {
+                navigation.goBack();
+                return true;
+            }
+            backPressPendingRef.current = true;
+            postToWeb({ kind: 'backPress' });
+            setTimeout(() => {
+                if (backPressPendingRef.current) {
+                    backPressPendingRef.current = false;
+                    navigation.goBack();
+                }
+            }, 450);
+            return true;
+        });
+        return () => {
+            backHandler.remove();
+            // 🔥 FLUSH the very last position on exit — the debounced save would
+            // otherwise be cancelled by the cleanup below and the last ~600ms of
+            // reading progress would be lost every single time.
+            if (scrollSaveTimer.current) clearTimeout(scrollSaveTimer.current);
+            const last = lastScrollPosRef.current;
+            if (last && last.chapter) {
+                saveScrollPosition(last.chapter, last.offset, last.global);
+            }
+            // Restore the system status bar if the reader is left in immersive
+            // mode (dock closed) — never leak the hidden bar to other screens.
+            StatusBar.setHidden(false);
+        };
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, []);
+
+    useEffect(() => {
+        if (!isOfflineMode && (!novel.chapters || novel.chapters.length === 0) && (!availableChapters || availableChapters.length === 0)) {
+            fetchChapters();
+        } else {
+            if (availableChapters && availableChapters.length > 0) {
+                const list = availableChapters.map(num => ({
+                    number: num,
+                    title: `فصل ${num}`,
+                    _id: num.toString()
+                }));
+                setChaptersList(list);
+                sendChapters(list);
+            } else if (novel.chapters && novel.chapters.length > 0) {
+                setChaptersList(novel.chapters);
+                sendChapters(novel.chapters);
+            }
+        }
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [novel.chapters, availableChapters, isOfflineMode]);
+
+    // Keep server reading-progress in sync with the chapter actually being viewed
+    useEffect(() => {
+        if (chapter && !isOfflineMode) updateProgressOnServer(chapter, currentViewedChapter);
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }, [currentViewedChapter]);
+
+    // ========================= WebView message handler =========================
+    const onMessage = (event) => {
+        const msg = event?.nativeEvent?.data;
+        if (!msg) return;
+        webAliveRef.current = Date.now();
+        let data = null;
+        try { data = JSON.parse(msg); } catch (e) { return; }
+        if (!data || !data.t) return;
+        switch (data.t) {
+            case 'ready': {
+                backPressPendingRef.current = false;
+                flushWebQueue();
+                sendSettings(settingsRef.current);
+                sendChapters();
+                sendWords();
+                sendFav(isFavoriteRef.current);
+                // re-send the chapter (in case it loaded before web was ready)
+                if (chapter) {
+                    const processed = applyReplacements(chapter.content);
+                    sendChapterToWeb({ ...chapter, processedContent: processed });
+                }
+                break;
+            }
+            case 'scroll': {
+                const chNum = parseInt(data.chapter) || currentViewedChapter;
+                // v2: the shell reports the offset INSIDE the active chapter's
+                // section — saving that (instead of the global page offset) is
+                // what makes "continue where I stopped" land on the exact line.
+                const inOffset = (data.inOffset != null) ? data.inOffset : data.offset;
+                lastScrollPosRef.current = { chapter: chNum, offset: inOffset, global: data.offset };
+                setCurrentViewedChapter(prev => (parseInt(prev) === chNum ? prev : chNum));
+                queueSaveScroll(chNum, inOffset, data.offset);
+                break;
+            }
+            case 'needNext':
+                fetchNextChapter();
+                break;
+            case 'nav': {
+                if (data.dir === 'next') navigateNextPrev(1);
+                else if (data.dir === 'prev') navigateNextPrev(-1);
+                else if (data.to) {
+                    const map = {
+                        home: 'MainTabs', downloads: 'Downloads', settings: 'Settings',
+                        contact: 'ContactUs', about: 'AboutApp',
+                    };
+                    if (data.to === 'novel') {
+                        navigation.goBack();
+                    } else if (map[data.to]) {
+                        navigation.navigate(map[data.to]);
+                    }
+                }
+                break;
+            }
+            case 'goto':
+                if (data.number) navigateChapter(parseInt(data.number));
+                break;
+            case 'novelPage':
+                navigation.goBack();
+                break;
+            case 'dock':
+                // The shell reports every dock open/close (toggle button, tap on
+                // content) — keep the system status bar in sync with it.
+                setDockOpen(!!data.open);
+                break;
+            case 'comments':
+                setShowComments(true);
+                break;
+            case 'fav':
+                toggleFavorite();
+                break;
+            case 'settings': {
+                if (data.patch) {
+                    // Changing delimiter styles / custom marks changes the chapter's
+                    // HTML structure (which spans are emitted) — rebuild the chapter
+                    // while preserving the current scroll position.
+                    const structural = ['selectedQuoteStyle', 'selectedMarkdownStyle', 'selectedBracketStyle', 'customOpenMark', 'customCloseMark'];
+                    const needsRebuild = structural.some(k => (
+                        Object.prototype.hasOwnProperty.call(data.patch, k)
+                        && String(data.patch[k] ?? '') !== String(settingsRef.current[k] ?? '')
+                    ));
+                    applySettingsPatch(data.patch);
+                    if (needsRebuild && chapterRef.current) {
+                        const ch = chapterRef.current;
+                        const processed = applyReplacements(ch.content || '');
+                        setTimeout(() => sendChapterToWeb({ ...ch, processedContent: processed }, { keepScroll: true }), 0);
+                    }
+                }
+                break;
+            }
+            case 'words':
+                wordsAction(data);
+                break;
+            case 'wordsOpen':
+                sendWords();
+                break;
+            case 'report':
+                submitReport(data);
+                break;
+            case 'tool':
+                if (data.tool === 'cleaner') setShowCleaner(true);
+                else if (data.tool === 'copyright') setShowCopyright(true);
+                break;
+            case 'themeCycle':
+                handleThemeCycle();
+                break;
+            case 'exit':
+                backPressPendingRef.current = false;
+                navigation.goBack();
+                break;
+            case 'profile':
+                if (authorProfile && !isOfflineMode) {
+                    navigation.push('UserProfile', { userId: authorProfile._id });
+                }
+                break;
+            case 'error':
+                console.log('[wor reader] web error:', data.message);
+                break;
+            default:
+                break;
+        }
+    };
+
+    // ========================= shell html (built once) =========================
+    const shellHtml = useMemo(() => buildWorShell({
+        safeTop: insets.top,
+        safeBottom: insets.bottom,
+        novelTitle: novel.title || '',
+        novelCover: novel.cover || '',
+        userName: userInfo?.username || userInfo?.name || '',
+        userRole: userInfo?.role || '',
+        initialSettings: { ...settingsRef.current, continuousMode: settingsRef.current.continuousMode },
+        // eslint-disable-next-line react-hooks/exhaustive-deps
+    }), []);
+
+    // re-send chapters when the list changes
+    useEffect(() => { if (webReadyRef.current) sendChapters(); }, [chaptersList]); // eslint-disable-line react-hooks/exhaustive-deps
+
+    // ========================= render =========================
+    const lightBg = isLightColor(settings.bgColor);
+
+    return (
+        <View style={[styles.container, { backgroundColor: settings.bgColor }]}>
+            <StatusBar
+                barStyle={lightBg ? 'dark-content' : 'light-content'}
+                backgroundColor={settings.bgColor}
+                hidden={!dockOpen}
+                animated
+            />
+
+            <WebView
+                ref={webViewRef}
+                source={{ html: shellHtml, baseUrl: 'https://app.zuesnovels.local' }}
+                originWhitelist={['*']}
+                style={{ flex: 1, backgroundColor: settings.bgColor }}
+                javaScriptEnabled
+                domStorageEnabled
+                allowFileAccess
+                allowUniversalAccessFromFileURLs
+                setSupportMultipleWindows={false}
+                showsVerticalScrollIndicator={false}
+                onMessage={onMessage}
+                cacheMode="LOAD_DEFAULT"
+                // opaque=false keeps the shell's own background visible without white flashes
+                opacity={1}
+            />
+
+            {/* loading overlay */}
+            {loading && !errorInfo && (
+                <View style={[styles.loadingOverlay, { backgroundColor: settings.bgColor }]}>
+                    <ActivityIndicator size="large" color={lightBg ? '#333' : '#fff'} />
+                    <Text style={[styles.loadingText, { color: lightBg ? '#333' : '#fff' }]}>جاري التحميل…</Text>
+                </View>
+            )}
+
+            {/* error state */}
+            {errorInfo && (
+                <View style={[styles.errorContainer, { backgroundColor: settings.bgColor }]}>
+                    <Ionicons name="cloud-offline-outline" size={64} color={lightBg ? '#555' : '#888'} />
+                    <Text style={[styles.errorTitle, { color: lightBg ? '#111' : '#fff' }]}>تعذّر عرض الفصل</Text>
+                    <Text style={[styles.errorMessage, { color: lightBg ? '#444' : '#999' }]}>{errorInfo.message}</Text>
+                    <TouchableOpacity style={styles.errorBtn} onPress={fetchChapter}>
+                        <Ionicons name="refresh" size={20} color="#000" />
+                        <Text style={styles.errorBtnTextDark}>إعادة المحاولة</Text>
+                    </TouchableOpacity>
+                    <TouchableOpacity style={[styles.errorBtn, styles.errorBtnSecondary]} onPress={() => navigation.goBack()}>
+                        <Ionicons name="arrow-back" size={20} color="#fff" />
+                        <Text style={styles.errorBtnText}>رجوع</Text>
+                    </TouchableOpacity>
+                </View>
+            )}
+
+            {/* comments modal */}
+            <Modal visible={showComments} animationType="slide" onRequestClose={() => setShowComments(false)}>
+                <View style={styles.commentsSheet}>
+                    <View style={styles.commentsHandle} />
+                    <View style={styles.commentsHeader}>
+                        <Text style={styles.commentsTitle}>تعليقات الفصل {chapterId}</Text>
+                        <TouchableOpacity onPress={() => setShowComments(false)}>
+                            <Ionicons name="close" size={24} color="#888" />
+                        </TouchableOpacity>
+                    </View>
+                    {isOfflineMode ? (
+                        <View style={{ flex: 1, justifyContent: 'center', alignItems: 'center' }}>
+                            <Text style={{ color: '#666' }}>التعليقات غير متاحة بدون اتصال</Text>
+                        </View>
+                    ) : (
+                        <CommentsSection novelId={novelId} user={userInfo} chapterNumber={currentViewedChapter} />
+                    )}
+                </View>
+            </Modal>
+
+            {/* (folder creation modal removed — replaced by the Galaxy words sheet) */}
+
+            {/* admin: cleaner modal */}
+            <Modal visible={showCleaner} animationType="slide" onRequestClose={() => setShowCleaner(false)}>
+                <View style={styles.adminSheet}>
+                    <View style={styles.adminHeader}>
+                        <Text style={[styles.adminTitle, { color: '#ff4444' }]}>الحذف الشامل</Text>
+                        <TouchableOpacity onPress={() => setShowCleaner(false)}>
+                            <Ionicons name="close" size={24} color="#888" />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.adminBody}>
+                        <Text style={styles.adminHint}>يحذف النص المطابق من جميع الفصول في السيرفر (للمشرفين).</Text>
+                        <View style={styles.inputRow}>
+                            <TextInput
+                                style={styles.textInput}
+                                placeholder="النص المراد حذفه أو تعديله"
+                                placeholderTextColor="#666"
+                                value={newCleanerWord}
+                                onChangeText={setNewCleanerWord}
+                                textAlign="right"
+                                multiline
+                            />
+                            <View style={{ flexDirection: 'row', gap: 8 }}>
+                                <TouchableOpacity style={[styles.addButton, { flex: 1 }]} onPress={handleExecuteCleaner} disabled={cleaningLoading}>
+                                    {cleaningLoading
+                                        ? <ActivityIndicator color="#000" />
+                                        : <Text style={styles.addButtonText}>{cleanerEditingId !== null ? 'تحديث' : 'تنفيذ الحذف'}</Text>}
+                                </TouchableOpacity>
+                                {cleanerEditingId !== null && (
+                                    <TouchableOpacity
+                                        style={[styles.addButton, { backgroundColor: '#555', flex: 0, paddingHorizontal: 16 }]}
+                                        onPress={() => { setCleanerEditingId(null); setCleanerOldWord(''); setNewCleanerWord(''); }}
+                                    >
+                                        <Ionicons name="close" size={18} color="#fff" />
+                                    </TouchableOpacity>
+                                )}
+                            </View>
+                        </View>
+                        <View style={{ maxHeight: SCREEN_HEIGHT * 0.45 }}>
+                            {(cleanerWords || []).map((item, index) => (
+                                <View key={`${item}_${index}`} style={styles.replacementItem}>
+                                    <Text style={styles.replacementText} numberOfLines={2}>{item}</Text>
+                                    <View style={{ flexDirection: 'row', gap: 12 }}>
+                                        <TouchableOpacity onPress={() => { setNewCleanerWord(item); setCleanerEditingId(index); setCleanerOldWord(item); }}>
+                                            <Ionicons name="create-outline" size={18} color="#8b95a5" />
+                                        </TouchableOpacity>
+                                        <TouchableOpacity onPress={() => handleDeleteCleaner(item)}>
+                                            <Ionicons name="trash-outline" size={18} color="#ff4444" />
+                                        </TouchableOpacity>
+                                    </View>
+                                </View>
+                            ))}
+                            {(!cleanerWords || cleanerWords.length === 0) && (
+                                <Text style={{ color: '#666', textAlign: 'center', marginTop: 20 }}>لا توجد كلمات محذوفة بعد</Text>
+                            )}
+                        </View>
+                    </View>
+                </View>
+            </Modal>
+
+            {/* admin: copyright modal */}
+            <Modal visible={showCopyright} animationType="slide" onRequestClose={() => setShowCopyright(false)}>
+                <View style={styles.adminSheet}>
+                    <View style={styles.adminHeader}>
+                        <Text style={[styles.adminTitle, { color: '#8b95a5' }]}>حقوق التطبيق</Text>
+                        <TouchableOpacity onPress={() => setShowCopyright(false)}>
+                            <Ionicons name="close" size={24} color="#888" />
+                        </TouchableOpacity>
+                    </View>
+                    <View style={styles.adminBody}>
+                        <Text style={styles.adminCardTitle}>تكرار الظهور</Text>
+                        <View style={{ flexDirection: 'row-reverse', gap: 8, marginBottom: 14, flexWrap: 'wrap' }}>
+                            {[['always', 'كل فصل'], ['everyX', `كل ${copyrightEveryX || 'X'} فصول`], ['never', 'إيقاف']].map(([val, label]) => (
+                                <TouchableOpacity
+                                    key={val}
+                                    style={[styles.freqBtn, copyrightFrequency === val && styles.freqBtnActive]}
+                                    onPress={() => setCopyrightFrequency(val)}
+                                >
+                                    <Text style={[styles.freqBtnText, copyrightFrequency === val && { color: '#000' }]}>{label}</Text>
+                                </TouchableOpacity>
+                            ))}
+                        </View>
+                        {copyrightFrequency === 'everyX' && (
+                            <TextInput
+                                style={[styles.textInput, { marginBottom: 14 }]}
+                                placeholder="عدد الفصول (X)"
+                                placeholderTextColor="#666"
+                                value={copyrightEveryX}
+                                onChangeText={setCopyrightEveryX}
+                                keyboardType="numeric"
+                                textAlign="right"
+                            />
+                        )}
+
+                        <Text style={styles.adminCardTitle}>نص البداية (يظهر أعلى الفصل)</Text>
+                        <TextInput
+                            style={[styles.textInput, { marginBottom: 14, minHeight: 70 }]}
+                            placeholder="مثال: حقوق النشر محفوظة لتطبيق زيوس..."
+                            placeholderTextColor="#666"
+                            value={copyrightStartText}
+                            onChangeText={setCopyrightStartText}
+                            textAlign="right"
+                            multiline
+                        />
+
+                        <Text style={styles.adminCardTitle}>نص النهاية (يظهر أسفل الفصل)</Text>
+                        <TextInput
+                            style={[styles.textInput, { marginBottom: 14, minHeight: 70 }]}
+                            placeholder="مثال: شكراً للقراءة على تطبيق زيوس..."
+                            placeholderTextColor="#666"
+                            value={copyrightEndText}
+                            onChangeText={setCopyrightEndText}
+                            textAlign="right"
+                            multiline
+                        />
+
+                        <Text style={styles.adminCardTitle}>نمط النص</Text>
+                        <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginBottom: 10, flexWrap: 'wrap' }}>
+                            {['#888888', '#ffffff', '#f97316', '#4ade80', '#3b82f6'].map(c => (
+                                <TouchableOpacity
+                                    key={c}
+                                    style={{ width: 30, height: 30, borderRadius: 15, backgroundColor: c, borderWidth: 2, borderColor: copyrightStyle.color === c ? '#fff' : 'transparent' }}
+                                    onPress={() => setCopyrightStyle(prev => ({ ...prev, color: c }))}
+                                />
+                            ))}
+                            <View style={{ flexDirection: 'row-reverse', gap: 8 }}>
+                                {['right', 'center', 'left'].map(a => (
+                                    <TouchableOpacity
+                                        key={a}
+                                        style={[styles.alignBtn, copyrightStyle.alignment === a && styles.alignBtnActive]}
+                                        onPress={() => setCopyrightStyle(prev => ({ ...prev, alignment: a }))}
+                                    >
+                                        <Text style={{ color: '#fff', fontSize: 11 }}>{a === 'right' ? 'يمين' : a === 'center' ? 'وسط' : 'يسار'}</Text>
+                                    </TouchableOpacity>
+                                ))}
+                                <TouchableOpacity
+                                    style={[styles.alignBtn, copyrightStyle.isBold && styles.alignBtnActive]}
+                                    onPress={() => setCopyrightStyle(prev => ({ ...prev, isBold: !prev.isBold }))}
+                                >
+                                    <Text style={{ color: '#fff', fontSize: 11 }}>عريض</Text>
+                                </TouchableOpacity>
+                            </View>
+                        </View>
+
+                        <View style={{ flexDirection: 'row-reverse', alignItems: 'center', gap: 10, marginBottom: 14 }}>
+                            <Switch
+                                value={settings.enableSeparator}
+                                onValueChange={(val) => applySettingsPatch({ enableSeparator: val })}
+                                trackColor={{ false: '#333', true: '#8b95a5' }}
+                                thumbColor="#fff"
+                            />
+                            <Text style={{ color: '#ccc', fontWeight: 'bold' }}>تفعيل الخط الفاصل تحت العنوان</Text>
+                        </View>
+                        {settings.enableSeparator && (
+                            <TextInput
+                                style={[styles.textInput, { marginBottom: 14 }]}
+                                placeholder="__________________"
+                                placeholderTextColor="#666"
+                                value={settings.separatorText}
+                                onChangeText={(val) => applySettingsPatch({ separatorText: val })}
+                                textAlign="right"
+                            />
+                        )}
+
+                        <TouchableOpacity style={[styles.addButton, { marginBottom: 30 }]} onPress={handleSaveCopyrights} disabled={copyrightLoading}>
+                            {copyrightLoading ? <ActivityIndicator color="#000" /> : <Text style={styles.addButtonText}>حفظ الحقوق</Text>}
+                        </TouchableOpacity>
+                    </View>
+                </View>
+            </Modal>
+        </View>
+    );
+}
+
+const styles = StyleSheet.create({
+    container: { flex: 1 },
+
+    // loading / error
+    loadingOverlay: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', zIndex: 50 },
+    loadingText: { marginTop: 14, fontSize: 15, fontWeight: '600' },
+    errorContainer: { ...StyleSheet.absoluteFillObject, justifyContent: 'center', alignItems: 'center', padding: 30, zIndex: 60 },
+    errorTitle: { fontSize: 22, fontWeight: 'bold', marginTop: 20, marginBottom: 10 },
+    errorMessage: { fontSize: 15, textAlign: 'center', lineHeight: 24, marginBottom: 30 },
+    errorBtn: { flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', gap: 8, backgroundColor: '#fff', paddingVertical: 14, paddingHorizontal: 30, borderRadius: 14, width: '100%', marginBottom: 12 },
+    errorBtnSecondary: { backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2e2e2e' },
+    errorBtnText: { color: '#fff', fontWeight: 'bold', fontSize: 16 },
+    errorBtnTextDark: { color: '#000', fontWeight: 'bold', fontSize: 16 },
+
+    // comments
+    commentsSheet: { flex: 1, backgroundColor: '#0a0a0a' },
+    commentsHandle: { width: 40, height: 5, backgroundColor: '#333', borderRadius: 3, alignSelf: 'center', marginTop: 10 },
+    commentsHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', padding: 15, borderBottomWidth: 1, borderColor: '#222' },
+    commentsTitle: { color: '#fff', fontSize: 16, fontWeight: 'bold' },
+
+    // folder modal
+    modalOverlay: { flex: 1, backgroundColor: 'rgba(0,0,0,0.6)', justifyContent: 'flex-end', alignItems: 'center' },
+    modalBackdrop: { ...StyleSheet.absoluteFillObject },
+    modalContent: { width: '80%', marginBottom: '30%', backgroundColor: '#181818', borderRadius: 16, padding: 20, alignItems: 'center', borderWidth: 1, borderColor: '#2e2e2e' },
+    modalTitle: { color: '#fff', fontSize: 18, fontWeight: 'bold', marginBottom: 15 },
+    modalInput: { width: '100%', backgroundColor: '#1d1d1d', color: '#fff', borderRadius: 10, padding: 12, textAlign: 'right', marginBottom: 20, borderWidth: 1, borderColor: '#2e2e2e' },
+    modalButtons: { flexDirection: 'row', gap: 10, width: '100%' },
+    modalBtn: { flex: 1, padding: 12, borderRadius: 10, alignItems: 'center', justifyContent: 'center' },
+    modalBtnText: { color: '#fff', fontWeight: 'bold' },
+
+    // admin sheets
+    adminSheet: { flex: 1, backgroundColor: '#0d0d0d' },
+    adminHeader: { flexDirection: 'row-reverse', justifyContent: 'space-between', alignItems: 'center', padding: 18, borderBottomWidth: 1, borderBottomColor: '#242424' },
+    adminTitle: { color: '#fff', fontSize: 17, fontWeight: 'bold' },
+    adminBody: { flex: 1, padding: 18 },
+    adminHint: { color: '#888', fontSize: 12, marginBottom: 14, textAlign: 'right', lineHeight: 20 },
+    adminCardTitle: { color: '#999', fontSize: 13, fontWeight: '700', marginBottom: 8, textAlign: 'right' },
+    inputRow: { marginBottom: 16, gap: 10 },
+    textInput: { backgroundColor: '#1d1d1d', color: '#fff', borderRadius: 10, padding: 12, textAlign: 'right', fontSize: 14, borderWidth: 1, borderColor: '#2e2e2e' },
+    addButton: { backgroundColor: '#fff', flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'center', padding: 12, borderRadius: 10, gap: 8 },
+    addButtonText: { color: '#000', fontWeight: 'bold' },
+    replacementItem: { backgroundColor: '#181818', borderRadius: 10, padding: 12, marginBottom: 8, flexDirection: 'row-reverse', alignItems: 'center', justifyContent: 'space-between', borderWidth: 1, borderColor: '#2a2a2a' },
+    replacementText: { color: '#ddd', fontSize: 13, flex: 1, textAlign: 'right', marginRight: 10 },
+    alignBtn: { padding: 8, backgroundColor: '#1a1a1a', borderRadius: 8, borderWidth: 1, borderColor: '#2e2e2e' },
+    alignBtnActive: { backgroundColor: '#8b95a5', borderColor: '#8b95a5' },
+    freqBtn: { paddingHorizontal: 12, paddingVertical: 6, borderRadius: 20, backgroundColor: '#1a1a1a', borderWidth: 1, borderColor: '#2e2e2e' },
+    freqBtnActive: { backgroundColor: '#8b95a5', borderColor: '#8b95a5' },
+    freqBtnText: { color: '#888', fontSize: 12, fontWeight: 'bold' },
+});

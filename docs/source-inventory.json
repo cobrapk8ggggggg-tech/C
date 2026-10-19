@@ -1,0 +1,3191 @@
+{
+  "source": "https://github.com/zeus82256-lang/C-app-new",
+  "revision": "b47e7bd2721040dd46b30d13f65335fef72acf7d",
+  "files": 125,
+  "textFiles": 115,
+  "textLines": 41518,
+  "entries": [
+    {
+      "path": ".github/workflows/build-ios.yml",
+      "bytes": 3607,
+      "sha256": "3b0e02eb215b017f686511d16423c15f56b50dce3632041ad63f6a5cf1d8f030",
+      "type": "text",
+      "lines": 108
+    },
+    {
+      "path": ".gitignore",
+      "bytes": 83,
+      "sha256": "419acf5114871d020c15beac4aeeb3d6c411c86a5801dc11c6de59b919f2f3e8",
+      "type": "text",
+      "lines": 8
+    },
+    {
+      "path": "backend/.gitignore",
+      "bytes": 14,
+      "sha256": "4d56952b0fb13bf8f9b6c13a6d4c34a075bac3af447636a1df4335d7576e2f97",
+      "type": "text",
+      "lines": 2
+    },
+    {
+      "path": "backend/config/cloudinary.js",
+      "bytes": 522,
+      "sha256": "d0513239583a653baf7fcbba9e81ace1f6c9afcad6097b5fecd6250124d8d735",
+      "type": "text",
+      "lines": 14,
+      "functions": [],
+      "imports": [
+        "cloudinary"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/config/firebaseAdmin.js",
+      "bytes": 1714,
+      "sha256": "2568f74471648767cc06053c6fcd1bf87122412bfd024db8cd2541243eb62e2a",
+      "type": "text",
+      "lines": 48,
+      "functions": [],
+      "imports": [
+        "firebase-admin",
+        "../serviceAccountKey.json"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/config/h",
+      "bytes": 1,
+      "sha256": "01ba4719c80b6fe911b091a7c05124b64eeece964e09c058ef8f9805daca546b",
+      "type": "text",
+      "lines": 2
+    },
+    {
+      "path": "backend/index.js",
+      "bytes": 6511,
+      "sha256": "b30cf92af1b5c6647fd895970fb3353ac00173e0f1a1e78957c74d69925ef9cd",
+      "type": "text",
+      "lines": 164,
+      "functions": [
+        "connectToDatabase",
+        "verifyToken",
+        "verifyAdmin"
+      ],
+      "imports": [
+        "fs",
+        "path",
+        "express",
+        "cors",
+        "jsonwebtoken",
+        "mongoose",
+        "multer",
+        "./models/user.model.js",
+        "./services/security.service",
+        "./routes/authRoutes",
+        "./routes/adminRoutes",
+        "./routes/translatorRoutes",
+        "./routes/reviewRoutes",
+        "./routes/glossaryAiRoutes",
+        "./routes/pureTranslatorRoutes",
+        "./routes/titleGenRoutes",
+        "./routes/publicRoutes",
+        "./routes/securityRoutes",
+        "./routes/analyticsRoutes",
+        "./routes/sitemapRoute"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/sitemap",
+          "middleware": []
+        }
+      ]
+    },
+    {
+      "path": "backend/models/analyticsEvent.model.js",
+      "bytes": 1373,
+      "sha256": "415c50046063e6ce71ab1bf5aee5ff43c7cfb7301fda4733dd80e40be845108b",
+      "type": "text",
+      "lines": 28,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/chapterContentMirror.model.js",
+      "bytes": 1324,
+      "sha256": "dda01bf922b8c7270202babfcbd754bb83a8ffe67c938b84e3ba005a916c9e3c",
+      "type": "text",
+      "lines": 24,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/chapterScraperJob.model.js",
+      "bytes": 842,
+      "sha256": "f97064580f47a8968c42dce9107f81f3174de45484d58599bd163d5bbb7e4686",
+      "type": "text",
+      "lines": 22,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/chat.model.js",
+      "bytes": 1183,
+      "sha256": "ce8788f94150cd07f295a95cf0a8a987391f6460b7866ef03c0030747b65f55a",
+      "type": "text",
+      "lines": 29,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/comment.model.js",
+      "bytes": 1703,
+      "sha256": "36c1779b488e664cb1637a089c2b50258419282bdbcf14330e675326b16d3e09",
+      "type": "text",
+      "lines": 45,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/glossary.model.js",
+      "bytes": 1246,
+      "sha256": "f46d26f56d43eeb32011df44f8f595819818c50a4979b922a92ddb4b4aa2b16d",
+      "type": "text",
+      "lines": 26,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/glossaryExtractionJob.model.js",
+      "bytes": 2013,
+      "sha256": "1fe8da05bd3f6f5eda30f91f886353b67d3afec0bad0610b5edf7547bcf1bf1d",
+      "type": "text",
+      "lines": 31,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/metadataTranslationJob.model.js",
+      "bytes": 845,
+      "sha256": "adbce092f0beb8cb3e1976c38625134e99eac88943f4bfbd9b37fdf98f81282a",
+      "type": "text",
+      "lines": 19,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/novel.model.js",
+      "bytes": 2656,
+      "sha256": "3b044897c1921f0a4bae3af63adadebcd85b379e91dbb0cb91e1a89d45d3e1d2",
+      "type": "text",
+      "lines": 60,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/novelLibrary.model.js",
+      "bytes": 1034,
+      "sha256": "ca1bfa4c03b76ed7c4d1eacc34ea974e3ef6cc2de8986c6eb8d71772bf9cd7de",
+      "type": "text",
+      "lines": 24,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/pureTranslationJob.model.js",
+      "bytes": 2327,
+      "sha256": "725a82749d36c9404292b3c2a299e58494ae47c7a9980d4d77f910747f082f51",
+      "type": "text",
+      "lines": 35,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/report.model.js",
+      "bytes": 816,
+      "sha256": "8677cb872e664fc98dd2d61c1b72d2389083934762e833471a9c1da2277a169e",
+      "type": "text",
+      "lines": 20,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/reviewFinding.model.js",
+      "bytes": 1248,
+      "sha256": "b6fc5afbe1994a0eaab72b437127e8ba01845f40f388e7d3b64952b758d5fa47",
+      "type": "text",
+      "lines": 25,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/reviewJob.model.js",
+      "bytes": 1942,
+      "sha256": "ba1a9b0f7760a32f55d80e901a79a43a22544aff4fef334549d8916c5534e216",
+      "type": "text",
+      "lines": 37,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/settings.model.js",
+      "bytes": 10280,
+      "sha256": "4897eb9f424400a066cf8378af8b65a7af5f2538c82dff9e3d4cfd148e8ecf87",
+      "type": "text",
+      "lines": 167,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/titleGenJob.model.js",
+      "bytes": 949,
+      "sha256": "f3ba4e5b860d83852eba1d37a9a451f174e745ae1b66b4fc3957ef013b4edb51",
+      "type": "text",
+      "lines": 24,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/translationChapter.model.js",
+      "bytes": 819,
+      "sha256": "f76d9593f4a6d693f6781577cde6d4516aad491d0b6c05b7ace1002a6edd74b4",
+      "type": "text",
+      "lines": 15,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/translationJob.model.js",
+      "bytes": 1062,
+      "sha256": "7963d6073e3169f2eea50a9bca516e8e5efa0c7c37836957846a50194c973747",
+      "type": "text",
+      "lines": 25,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/models/user.model.js",
+      "bytes": 810,
+      "sha256": "a1a1ebfe3fbc83188311f4e18eb03604355eeef004a9b53289f4a762cc1012eb",
+      "type": "text",
+      "lines": 30,
+      "functions": [],
+      "imports": [
+        "mongoose"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/package.json",
+      "bytes": 723,
+      "sha256": "231e13b104f12dd32ca1f7c7cd6d4019e1fa8eb4d068bf9aab1e4be5a4520508",
+      "type": "text",
+      "lines": 31
+    },
+    {
+      "path": "backend/routes/adminRoutes.js",
+      "bytes": 107766,
+      "sha256": "470c7397030df5d10bd9977307712f5babbb3e95d106273249052a38993a3d13",
+      "type": "text",
+      "lines": 2279,
+      "functions": [
+        "logScraper",
+        "isTranslationOnlyModel",
+        "findLLMModel",
+        "isQwenProvider",
+        "isGeminiWebProvider",
+        "normalizePowProviderUrl",
+        "resolveDeepSeekPowUrl",
+        "isDeepSeekProvider",
+        "pickDeepSeekTokenSimple",
+        "extractJsonObject",
+        "callTranslationProvider",
+        "updateMetadataJob",
+        "translateNovelMetadata",
+        "escapeRegExp",
+        "getGlobalSettings",
+        "processTitleExtractionJob"
+      ],
+      "imports": [
+        "mongoose",
+        "path",
+        "adm-zip",
+        "jsonwebtoken",
+        "axios",
+        "@google/generative-ai",
+        "../services/qwenAndroid.service.js",
+        "../services/geminiWeb.service.js",
+        "../services/deepseekAndroid.service.js",
+        "../services/qwenAutoAccount.service.js",
+        "../services/chapterMirror.service.js",
+        "../config/firebaseAdmin",
+        "../config/cloudinary",
+        "../models/user.model.js",
+        "../models/novel.model.js",
+        "../models/novelLibrary.model.js",
+        "../models/settings.model.js",
+        "../models/comment.model.js",
+        "../models/chapterScraperJob.model.js",
+        "../models/metadataTranslationJob.model.js",
+        "archiver",
+        "multer"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/admin/tools/extract-titles/jobs",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/users",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/novel/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/tools/extract-titles/start",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/tools/extract-titles/jobs/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/tools/extract-titles/jobs/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/categories",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/categories/:name",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/cleaner",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/cleaner",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/admin/cleaner/:index",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/admin/novels/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/admin/users/:id/role",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/novels/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/cleaner/:word",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/global-replacements",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/global-replacements",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/admin/global-replacements/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/global-replacements/:id",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/copyright",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/copyright",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/scraper/logs",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/scraper/logs",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/scraper/init",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/scraper/log",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/watchlist",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/scraper-keys",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/scraper-keys",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/scraper-keys/check",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/scraper-keys/check-tomatomtl",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/scraper-keys/check-wtrlab",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/scraper/check-chapters",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/scraper/receive",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/translator/metadata-jobs",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/translator/metadata-jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/novels/:id/translate-metadata",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/translator/metadata-jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/novels",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/novels/:id/export",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/chapters",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/admin/chapters/:novelId/:chapterNumber",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/admin/chapters/:novelId/:chapterNumber",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/chapters/batch-delete",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/chapters/bulk-upload",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/admin/ownership/transfer-all",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/analyticsRoutes.js",
+      "bytes": 6606,
+      "sha256": "701f29932c061e6d6734f4598acb491ed6bf0eada2d46afd67a3a5d656cb43de",
+      "type": "text",
+      "lines": 144,
+      "functions": [
+        "cleanStr"
+      ],
+      "imports": [
+        "../models/analyticsEvent.model.js",
+        "../services/security.service",
+        "../models/novel.model.js"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/analytics/collect",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/analytics/summary",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/authRoutes.js",
+      "bytes": 12239,
+      "sha256": "edd2b96866926bbb112894be702c066f0e3b1404ddc09b356f7308491159903f",
+      "type": "text",
+      "lines": 275,
+      "functions": [],
+      "imports": [
+        "google-auth-library",
+        "jsonwebtoken",
+        "crypto",
+        "../models/user.model.js",
+        "../models/settings.model.js"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/auth/signup",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/auth/login",
+          "middleware": []
+        },
+        {
+          "method": "PUT",
+          "path": "/auth/password",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/auth/google",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/auth/google/callback",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/user",
+          "middleware": [
+            "verifyToken"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/glossaryAiRoutes.js",
+      "bytes": 50639,
+      "sha256": "63c5c450704208dbb06856f7aab183dafedd8cd1eb6d05e4b35f35c93cb68764",
+      "type": "text",
+      "lines": 785,
+      "functions": [
+        "normalizeCategory",
+        "buildExtractionPrompt",
+        "parseExtractedTerms",
+        "saveExtractedTerms",
+        "pushLog",
+        "processGlossaryJob",
+        "parseChapterDelaySeconds"
+      ],
+      "imports": [
+        "mongoose",
+        "../models/novel.model.js",
+        "../models/glossary.model.js",
+        "../models/glossaryExtractionJob.model.js",
+        "../models/settings.model.js",
+        "../services/qwenAutoAccount.service.js",
+        "./translatorRoutes",
+        "../config/firebaseAdmin"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/glossary-ai/novels",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/glossary-ai/start",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/glossary-ai/jobs/:id/pause",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/glossary-ai/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/glossary-ai/jobs/:id/delay",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/glossary-ai/jobs",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/glossary-ai/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/publicRoutes.js",
+      "bytes": 65297,
+      "sha256": "25767dd425c9c762bdf79e5ecb2752f5c452be0c6c67ee6b425275da6d70512e",
+      "type": "text",
+      "lines": 1455,
+      "functions": [
+        "escapeRegExp",
+        "checkNovelStatus",
+        "safeReplaceAll"
+      ],
+      "imports": [
+        "mongoose",
+        "jsonwebtoken",
+        "axios",
+        "../config/firebaseAdmin",
+        "../config/cloudinary",
+        "../models/user.model.js",
+        "../models/novel.model.js",
+        "../models/novelLibrary.model.js",
+        "../models/comment.model.js",
+        "../models/settings.model.js",
+        "../services/chapterMirror.service.js",
+        "../services/chaptersListCache.service.js",
+        "../models/report.model.js"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/categories",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/upload",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/novels/:novelId/react",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/novels/:novelId/comments",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/comments/:commentId/replies",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/comments",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "PUT",
+          "path": "/api/comments/:commentId",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/comments/:commentId/action",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/comments/:commentId",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/user/public-profile",
+          "middleware": []
+        },
+        {
+          "method": "PUT",
+          "path": "/api/user/profile",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/user/stats",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/novels/:id/view",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/novels",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/novels/:id",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/novels/:id/chapters-list",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/novels/:novelId/chapters/:chapterId",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/novel/update",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/novel/library",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/novel/status/:novelId",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/reports",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/reports",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/notifications",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/notifications/mark-read",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/image-proxy",
+          "middleware": []
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/pureTranslatorRoutes.js",
+      "bytes": 49518,
+      "sha256": "fd6379511437789bb35411a534c4870670d397234cc77d067f8909959094e1b6",
+      "type": "text",
+      "lines": 796,
+      "functions": [
+        "pushLog",
+        "processPureTranslationJob",
+        "parseChapterDelaySeconds"
+      ],
+      "imports": [
+        "mongoose",
+        "../models/novel.model.js",
+        "../models/glossary.model.js",
+        "../models/pureTranslationJob.model.js",
+        "../models/settings.model.js",
+        "../services/qwenAutoAccount.service.js",
+        "../services/chapterMirror.service.js",
+        "./translatorRoutes",
+        "../config/firebaseAdmin"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/pure-translate/novels",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/pure-translate/start",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/pure-translate/jobs/:id/pause",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/pure-translate/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/pure-translate/jobs/:id/delay",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/pure-translate/jobs",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/pure-translate/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/reviewRoutes.js",
+      "bytes": 43440,
+      "sha256": "015bec1b38d3e778cb39f5c4e9ec86b7a2abb8e9d8c7954f9ad01c5fef5a39ff",
+      "type": "text",
+      "lines": 761,
+      "functions": [
+        "chapterHeuristics",
+        "buildReviewPrompt",
+        "parseReviewVerdict",
+        "pushLog",
+        "processReviewJob",
+        "recordFinding",
+        "parseChapterDelaySeconds"
+      ],
+      "imports": [
+        "mongoose",
+        "../models/novel.model.js",
+        "../models/reviewJob.model.js",
+        "../models/reviewFinding.model.js",
+        "../models/settings.model.js",
+        "../services/qwenAutoAccount.service.js",
+        "./translatorRoutes",
+        "../config/firebaseAdmin"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/review/novels",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/review/start",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/review/jobs/:id/pause",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/review/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/review/jobs/:id/delay",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/review/jobs",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/review/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/review/findings",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/review/findings/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/review/findings/re-review",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/securityRoutes.js",
+      "bytes": 4184,
+      "sha256": "6d3bd30b000ea6f9c688bd781fb037e612fea869262ed7f40b249e66a7ca2402",
+      "type": "text",
+      "lines": 86,
+      "functions": [],
+      "imports": [
+        "express",
+        "../services/security.service"
+      ],
+      "routes": [
+        {
+          "method": "POST",
+          "path": "/api/security/captcha",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/security/reader-session",
+          "middleware": []
+        },
+        {
+          "method": "POST",
+          "path": "/api/security/reader-flag",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/security/honeypot",
+          "middleware": []
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/security/bans",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/security/unban",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/admin/security/unban-all",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/admin/security/stats",
+          "middleware": [
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/sitemapRoute.js",
+      "bytes": 2163,
+      "sha256": "67d32272b0c74804633a1f5176dc81f02f09b3ff87c1129b16dec3ec88603dda",
+      "type": "text",
+      "lines": 50,
+      "functions": [
+        "esc"
+      ],
+      "imports": [
+        "../models/novel.model.js"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/routes/titleGenRoutes.js",
+      "bytes": 14141,
+      "sha256": "1834017b1d9239714554c7179978245c0895baf7b3bbd0a2daecfd98e6027fcb",
+      "type": "text",
+      "lines": 350,
+      "functions": [
+        "getGlobalSettings",
+        "processTitleGenJob",
+        "pushLog"
+      ],
+      "imports": [
+        "mongoose",
+        "@google/generative-ai",
+        "../models/novel.model.js",
+        "../models/titleGenJob.model.js",
+        "../models/settings.model.js",
+        "../config/firebaseAdmin"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/title-gen/jobs",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/title-gen/start",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/title-gen/jobs/:id/pause",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/title-gen/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/title-gen/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/title-gen/settings",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/title-gen/settings",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/routes/translatorRoutes.js",
+      "bytes": 106077,
+      "sha256": "4362775217016f9ca99dd207de5c16084904052bccd5d05b2e110523b58090e1",
+      "type": "text",
+      "lines": 1907,
+      "functions": [
+        "normalizePowProviderUrl",
+        "resolveDeepSeekPowUrl",
+        "getDeepSeekConversationContext",
+        "resetConversationContextsForScope",
+        "resetConversationContextPurposeForScope",
+        "getTokenConversationScope",
+        "hashStringToIndex",
+        "getProviderAuthKeys",
+        "pickDeepSeekToken",
+        "getGlobalSettings",
+        "isTranslationOnlyModel",
+        "findLLMModel",
+        "isDeepSeekProvider",
+        "isQwenProvider",
+        "isGeminiWebProvider",
+        "isStickyChatProvider",
+        "stripCodeBlocks",
+        "removeDeepSeekFinishedMarker",
+        "getArabicLetterCount",
+        "getArabicWordCount",
+        "getEnglishWordCount",
+        "getForeignScriptRuns",
+        "isLatinWord",
+        "getSourceMagnitude",
+        "escapeRegex",
+        "isAllowedShortLatinToken",
+        "extractEnglishResidues",
+        "extractForeignResidues",
+        "getResidueContexts",
+        "parseJsonFromAiText",
+        "isLikelyAiRefusalOrMeta",
+        "validateTranslatedChapter",
+        "detectRepeatedParagraphs",
+        "translateResiduesOnly",
+        "reviewQuestionableChapter",
+        "buildRepairTranslationPrompt",
+        "callTranslationProvider",
+        "processTranslationJob",
+        "pushLog",
+        "normalizeProviderForStorage"
+      ],
+      "imports": [
+        "mongoose",
+        "@google/generative-ai",
+        "axios",
+        "../models/novel.model.js",
+        "../models/glossary.model.js",
+        "../models/translationJob.model.js",
+        "../models/settings.model.js",
+        "../services/deepseekAndroid.service.js",
+        "../services/qwenAndroid.service.js",
+        "../services/geminiWeb.service.js",
+        "../services/qwenAutoAccount.service.js",
+        "../services/chapterMirror.service.js",
+        "../config/firebaseAdmin"
+      ],
+      "routes": [
+        {
+          "method": "GET",
+          "path": "/api/translator/novels",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/translator/start",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/translator/jobs/:id/pause",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/translator/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/translator/jobs",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/translator/jobs/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/translator/glossary/:novelId",
+          "middleware": [
+            "verifyToken"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/translator/glossary",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "DELETE",
+          "path": "/api/translator/glossary/:id",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/translator/glossary/bulk-delete",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "GET",
+          "path": "/api/translator/settings",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/translator/settings",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        },
+        {
+          "method": "POST",
+          "path": "/api/translator/providers/models",
+          "middleware": [
+            "verifyToken",
+            "verifyAdmin"
+          ]
+        }
+      ]
+    },
+    {
+      "path": "backend/services/chapterMirror.service.js",
+      "bytes": 5702,
+      "sha256": "97d501b00eccfd736dded1e763bb3f8c00cb3441ad1a5b4df62a7a5541d4be80",
+      "type": "text",
+      "lines": 134,
+      "functions": [
+        "memSet",
+        "memGet",
+        "memDelete",
+        "memClearNovel",
+        "memClearAll",
+        "upsertMirror",
+        "deleteMirror",
+        "clearNovelMirror",
+        "clearAllMirror",
+        "isFirestoreQuotaError",
+        "fetchChapterContent"
+      ],
+      "imports": [
+        "../models/chapterContentMirror.model.js",
+        "./chaptersListCache.service.js"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/services/chaptersListCache.service.js",
+      "bytes": 2133,
+      "sha256": "13e8f1787625c11b3de24a0da775f9e2e6addf870661c1b44ab256b6b20eb900",
+      "type": "text",
+      "lines": 62,
+      "functions": [
+        "roleBucketOf",
+        "get",
+        "set",
+        "invalidate",
+        "invalidateAll"
+      ],
+      "imports": [],
+      "routes": []
+    },
+    {
+      "path": "backend/services/deepseekAndroid.service.js",
+      "bytes": 8611,
+      "sha256": "6dc1e1b32894e5e0c2b11afea10d6c92570bdb181ecd580ee0f5e322f4775fa2",
+      "type": "text",
+      "lines": 189,
+      "functions": [
+        "removeDeepSeekFinishedMarker",
+        "generateDeviceId",
+        "generateRangersId",
+        "getTzOffset",
+        "buildFullHeaders",
+        "buildPowRequestUrl",
+        "getFreshPow",
+        "createChatSession",
+        "parseDeepSeekLine",
+        "askDeepSeek"
+      ],
+      "imports": [
+        "axios"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/services/geminiWeb.service.js",
+      "bytes": 29596,
+      "sha256": "0a97b2f588c23550ae5f5f416d11dc323c310ccd53732201172b578aca701dfe",
+      "type": "text",
+      "lines": 573,
+      "functions": [
+        "parseCookieString",
+        "cookiesToString",
+        "cookieKeyFor",
+        "getJar",
+        "getGuestJar",
+        "mergeSetCookies",
+        "geminiHeaders",
+        "geminiGuestHeaders",
+        "looksLikeGeminiCookies",
+        "extractSessionTokens",
+        "fetchPageFollowingRedirects",
+        "getTokens",
+        "getGuestTokens",
+        "buildContext",
+        "consumeStreamGenerate",
+        "sendMessage",
+        "sendGuestMessage",
+        "looksIncomplete",
+        "stitchWithoutOverlap",
+        "runGuestMode",
+        "isCookieLevelFailure",
+        "askGeminiWeb"
+      ],
+      "imports": [
+        "axios",
+        "crypto"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/services/qwenAndroid.service.js",
+      "bytes": 9622,
+      "sha256": "4cc8bd2292217c8e4a2a5660a096e4405b99e9605d336b929911de46a76f53e2",
+      "type": "text",
+      "lines": 218,
+      "functions": [
+        "looksRateLimited",
+        "looksAuthError",
+        "classifyQwenAxiosError",
+        "parseCookies",
+        "buildCookieHeader",
+        "headers",
+        "createChat",
+        "extractText",
+        "parseQwenLine",
+        "askQwen"
+      ],
+      "imports": [
+        "axios",
+        "uuid"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/services/qwenAutoAccount.service.js",
+      "bytes": 21376,
+      "sha256": "98efee896b5fc930de253fd342fd5eecf2ad6b65f4344d27812279a530fc5ba7",
+      "type": "text",
+      "lines": 436,
+      "functions": [
+        "normalizeAccount",
+        "loadStore",
+        "enqueueSettingsWrite",
+        "persistAccountsSerialized",
+        "isAccountUsable",
+        "getUsableAccounts",
+        "isTokenEphemeralLimited",
+        "filterUsableQwenTokens",
+        "markTokenRateLimited",
+        "markTokenDead",
+        "isTransientNetworkError",
+        "markTokenFailure",
+        "persistProviderToken",
+        "createTempMailIoEmail",
+        "createMailTmEmail",
+        "fetchMessageBodies",
+        "createVerifiedTempEmail",
+        "waitForActivationLink",
+        "appHeaders",
+        "signupQwen",
+        "activateAccount",
+        "signinQwen",
+        "createQwenAccountInternal",
+        "ensureQwenAccount"
+      ],
+      "imports": [
+        "axios",
+        "crypto",
+        "../models/settings.model.js"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/services/security.service.js",
+      "bytes": 17567,
+      "sha256": "cc227e4d8526e97bbda9e4c61af19d114bfb44c3cd88dd356d8fcec3355dcdf0",
+      "type": "text",
+      "lines": 441,
+      "functions": [
+        "trimWindow",
+        "trimViolations",
+        "getIp",
+        "identify",
+        "hasValidCaptchaPass",
+        "recordViolation",
+        "shouldEmergencyBan",
+        "minutesLeft",
+        "throttle",
+        "securityMiddleware",
+        "collectRateLimit",
+        "verifyTurnstileToken",
+        "issueCaptchaPass",
+        "checkCaptchaPass",
+        "issueReaderSession",
+        "hasValidReaderSession",
+        "recordReaderFlag",
+        "isReaderFlagged",
+        "securityStats",
+        "listBans",
+        "unbanIp",
+        "unbanAllIps"
+      ],
+      "imports": [
+        "crypto",
+        "jsonwebtoken"
+      ],
+      "routes": []
+    },
+    {
+      "path": "backend/uploads",
+      "bytes": 0,
+      "sha256": "e3b0c44298fc1c149afbf4c8996fb92427ae41e4649b934ca495991b7852b855",
+      "type": "text",
+      "lines": 1
+    },
+    {
+      "path": "qwen.py",
+      "bytes": 36480,
+      "sha256": "a5467f780985e7d3a522d1c32582fc41981040c3e4e03b3b9b420ac21f7eeb35",
+      "type": "text",
+      "lines": 937
+    },
+    {
+      "path": "tests/security-galaxy.test.js",
+      "bytes": 5543,
+      "sha256": "7a86fc361fa188028c674cd658f48d6fe03b2abb7ae6d50dc5ec2bbbdf9a31ec",
+      "type": "text",
+      "lines": 100,
+      "functions": [
+        "check",
+        "makeReq",
+        "makeRes"
+      ],
+      "imports": [
+        "../backend/services/security.service",
+        "jsonwebtoken"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/.gitignore",
+      "bytes": 440,
+      "sha256": "5936b94a73a28b6735de672b54c2c058a33c9ae1edb62d87d6a4418e14447805",
+      "type": "text",
+      "lines": 42
+    },
+    {
+      "path": "web/App.js",
+      "bytes": 24091,
+      "sha256": "1f4673984b0cd9a394e32f12572d95b0701142797c8406371b54873f702a411d",
+      "type": "text",
+      "lines": 522,
+      "functions": [
+        "MainTabs",
+        "MainLayout",
+        "NavigationRoot",
+        "App"
+      ],
+      "imports": [
+        "react",
+        "@react-navigation/native",
+        "@react-navigation/native-stack",
+        "@react-navigation/bottom-tabs",
+        "expo-status-bar",
+        "@expo/vector-icons",
+        "react-native",
+        "expo-image",
+        "expo-linear-gradient",
+        "expo-linking",
+        "./src/context/AuthContext",
+        "./src/context/ToastContext",
+        "./src/screens/HomeScreen",
+        "./src/screens/LibraryScreen",
+        "./src/screens/ProfileScreen",
+        "./src/screens/NovelDetailScreen",
+        "./src/screens/ReaderScreen",
+        "./src/screens/CategoryScreen",
+        "./src/screens/SearchScreen",
+        "./src/screens/LoginScreen",
+        "./src/screens/SignupScreen",
+        "./src/screens/AdminDashboardScreen",
+        "./src/screens/ManagementScreen",
+        "./src/screens/UsersManagementScreen",
+        "./src/screens/AdminMainScreen",
+        "./src/screens/BulkUploadScreen",
+        "./src/screens/AutoImportScreen",
+        "./src/screens/ScraperKeysScreen",
+        "./src/screens/PrivacyPolicyScreen",
+        "./src/screens/SettingsScreen",
+        "./src/screens/ContactUsScreen",
+        "./src/screens/AboutAppScreen",
+        "./src/screens/DownloadsScreen",
+        "./src/screens/ChapterTitleFixerScreen",
+        "./src/screens/ChapterTitleFixerSelectionScreen",
+        "./src/screens/TranslatorHubScreen",
+        "./src/screens/EnglishNovelsSelectionScreen",
+        "./src/screens/TranslationJobDetailScreen",
+        "./src/screens/ReviewHubScreen",
+        "./src/screens/ReviewNovelsSelectionScreen",
+        "./src/screens/ReviewJobDetailScreen",
+        "./src/screens/ReviewFindingsScreen",
+        "./src/screens/GlossaryExtractorHubScreen",
+        "./src/screens/GlossaryExtractorSelectionScreen",
+        "./src/screens/GlossaryExtractorJobDetailScreen",
+        "./src/screens/PureTranslatorHubScreen",
+        "./src/screens/PureTranslatorSelectionScreen",
+        "./src/screens/PureTranslatorJobDetailScreen",
+        "./src/screens/GlossaryManagerScreen",
+        "./src/screens/TranslatorSettingsScreen",
+        "./src/screens/MetadataTranslationHubScreen",
+        "./src/screens/NovelMetadataTranslationScreen",
+        "./src/screens/TitleGeneratorHubScreen",
+        "./src/screens/TitleGeneratorSelectionScreen",
+        "./src/screens/TitleGeneratorDetailScreen",
+        "./src/screens/TitleGeneratorSettingsScreen",
+        "./assets/banner.png",
+        "./assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/app.json",
+      "bytes": 785,
+      "sha256": "43894238e387952be467db72966a0e7f7e3f11d5c06f49ef9b401d32e2510543",
+      "type": "text",
+      "lines": 32
+    },
+    {
+      "path": "web/assets/adaptive-icon.png",
+      "bytes": 90269,
+      "sha256": "f6f36c093ae78bdfff535de7852ec7c0b8a78ab68f871d790f4c53b0495ed3d5",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/banner.png",
+      "bytes": 37512,
+      "sha256": "e45c2f31fed2dc6120504874a9142ac24dc0bb5084ceb55a03b543279a16c834",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/favicon.png",
+      "bytes": 1466,
+      "sha256": "24272cdaeff82cc5facdaccd982a6f05b60c4504704bbf94c19a6388659880bb",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/fonts/Amiri-Regular.ttf",
+      "bytes": 104240,
+      "sha256": "9ed2b09d83fc53e49efed4a5d58843de9b108de79be1f170cdd63344e9780353",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/fonts/Cairo-Bold.ttf",
+      "bytes": 151604,
+      "sha256": "32774e424b298422afcd3b1556ca6e75588cd5bbe0c51f17e3367a7025b81951",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/fonts/Tajawal-Bold.ttf",
+      "bytes": 107368,
+      "sha256": "935e8268ad3ad18210ecfe182dbf64b0eaaee2a50ca98fb5f1e219f2f21c7ccd",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/fonts/Tajawal-Regular.ttf",
+      "bytes": 63844,
+      "sha256": "82e2400c43f43e9a09e15cc923e87ee4f0150e556164f9c9377c1b30e80c203a",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/icon.png",
+      "bytes": 90269,
+      "sha256": "f6f36c093ae78bdfff535de7852ec7c0b8a78ab68f871d790f4c53b0495ed3d5",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/snack-icon.png",
+      "bytes": 13802,
+      "sha256": "d2d428fb3f16fd545f84f8482d971e393beacdad7a8b37db8da366170225945a",
+      "type": "binary"
+    },
+    {
+      "path": "web/assets/splash-icon.png",
+      "bytes": 128790,
+      "sha256": "29a2cc7beb06c971b6db1dd7f19ac48895b7652fcdb813ad5c8f658a53516db4",
+      "type": "binary"
+    },
+    {
+      "path": "web/babel.config.j",
+      "bytes": 155,
+      "sha256": "b018ff14e5b35254a8c82c7fe39d2f6f2e4ff7c2bdad81a80d5b914c6eb58bb4",
+      "type": "text",
+      "lines": 7
+    },
+    {
+      "path": "web/bun.lock",
+      "bytes": 171960,
+      "sha256": "d0ec4de2ba984c08b5fa1e333404c33ad64f4848fb3eab8e70fe2343058df621",
+      "type": "text",
+      "lines": 1426
+    },
+    {
+      "path": "web/index.js",
+      "bytes": 307,
+      "sha256": "5c157f4d44972d9c84415e1e4bda595b3abcd8cf733f8a9cd20935bec3eccc42",
+      "type": "text",
+      "lines": 9,
+      "functions": [],
+      "imports": [
+        "expo",
+        "./App"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/package.json",
+      "bytes": 1167,
+      "sha256": "c18e8513236bdc9594702f610ecd0994afdbb17216eb8c9130710f0cd18e2cd5",
+      "type": "text",
+      "lines": 40
+    },
+    {
+      "path": "web/src/components/CommentsSection.js",
+      "bytes": 30982,
+      "sha256": "a9dba9e33e0cdd160376344e84bb387a0bec45afe8b636c4cd228cde8002ceb0",
+      "type": "text",
+      "lines": 668,
+      "functions": [
+        "CommentsSection"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "@react-navigation/native",
+        "../services/api",
+        "../context/ToastContext",
+        "./CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/components/CustomAlert.js",
+      "bytes": 3397,
+      "sha256": "70db79a7d6f37e42b0da98bd008508fc0fd07b3bff3988e917dd22eb9e0a7de2",
+      "type": "text",
+      "lines": 125,
+      "functions": [],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "expo-linear-gradient"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/context/AuthContext.js",
+      "bytes": 2907,
+      "sha256": "94f067b8d1b23795791b185105d3b76f4b91ee6a3bbdbcdd2c0c252bc79c7605",
+      "type": "text",
+      "lines": 91,
+      "functions": [],
+      "imports": [
+        "react",
+        "@react-native-async-storage/async-storage",
+        "../services/api"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/context/ToastContext.js",
+      "bytes": 3120,
+      "sha256": "d0bc619f1409d39f1a5f8025a40eb841b1ab5ed50c14a1c3985177118ad376bc",
+      "type": "text",
+      "lines": 100,
+      "functions": [],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "expo-linear-gradient"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/data/novelsData.js",
+      "bytes": 9862,
+      "sha256": "4d1367022a7857c46ebeb22c83d2beec93fa1f93a575db89855f67bd9d49dbfd",
+      "type": "text",
+      "lines": 209,
+      "functions": [],
+      "imports": [],
+      "routes": []
+    },
+    {
+      "path": "web/src/reader/NativeReaderPanel.js",
+      "bytes": 29343,
+      "sha256": "20c6d0c71f5bbd10938105920cfda5c2062d070e2fdffc6767cd094e271cd29b",
+      "type": "text",
+      "lines": 483,
+      "functions": [
+        "NativeReaderPanel"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/reader/optionalModules.js",
+      "bytes": 713,
+      "sha256": "473254929a30a16e9c847ba5ce0727f67d19ba57527befb6cb46dc912fa0b0fd",
+      "type": "text",
+      "lines": 17,
+      "functions": [],
+      "imports": [
+        "expo-keep-awake"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/reader/worCSS.js",
+      "bytes": 488398,
+      "sha256": "488619ac4dd34ed287084daac622fef547d8314b8e3c97f717c30f52c0277f7d",
+      "type": "text",
+      "lines": 10,
+      "functions": [],
+      "imports": [],
+      "routes": []
+    },
+    {
+      "path": "web/src/reader/worFonts.js",
+      "bytes": 5424,
+      "sha256": "7b247974b76290916dcf58e775927feecf43889da1fdad2c1d6853f29132a822",
+      "type": "text",
+      "lines": 45,
+      "functions": [],
+      "imports": [],
+      "routes": []
+    },
+    {
+      "path": "web/src/reader/worShell.js",
+      "bytes": 137073,
+      "sha256": "2bb755c0fda31fbc58a577fdb809c5670dc18ff80847f6c8a05ad7f6ba640a57",
+      "type": "text",
+      "lines": 2457,
+      "functions": [
+        "bridgeScript",
+        "buildWorShell"
+      ],
+      "imports": [
+        "./worCSS",
+        "./worFonts"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/reader/wordsStore.js",
+      "bytes": 7938,
+      "sha256": "35b031b5a43b1607630a60e431139fb591c897fb6d8304b1e0407da36f6d1200",
+      "type": "text",
+      "lines": 188,
+      "functions": [
+        "saveWordsStore",
+        "loadWordsStore",
+        "effectiveTerms",
+        "replaceTermsInText",
+        "buildColoredTerms",
+        "buildColoredRegexSources"
+      ],
+      "imports": [
+        "@react-native-async-storage/async-storage"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/AboutAppScreen.js",
+      "bytes": 2762,
+      "sha256": "ba30b97ec427e1155c7882ee9410a791132416048e3acb6603dad3cbb44ede98",
+      "type": "text",
+      "lines": 64,
+      "functions": [
+        "AboutAppScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/AdminDashboardScreen.js",
+      "bytes": 52015,
+      "sha256": "c1c42193ee3c05bbede3108c360d179cf30eedb6587490c45076cf303ada13a8",
+      "type": "text",
+      "lines": 1004,
+      "functions": [
+        "AdminDashboardScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "expo-image-picker",
+        "expo-document-picker",
+        "../services/api",
+        "../context/ToastContext",
+        "../context/AuthContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/AdminMainScreen.js",
+      "bytes": 36223,
+      "sha256": "ff7c4e58484eca01232b3058faf7d11beecccdda925a3eebea03db3aab42e855",
+      "type": "text",
+      "lines": 987,
+      "functions": [
+        "AdminMainScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/api",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/AutoImportScreen.js",
+      "bytes": 29924,
+      "sha256": "1f341e4e3bffbbc4d88083edae502083108cf35bb3f24423e408ddeeee7e7c73",
+      "type": "text",
+      "lines": 618,
+      "functions": [
+        "AutoImportScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "axios",
+        "../services/api",
+        "expo-image",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/BulkUploadScreen.js",
+      "bytes": 12402,
+      "sha256": "2314e01356390b980faf8b2ebbe9b7dd946987a545e86a0991cf73d6cae6de79",
+      "type": "text",
+      "lines": 291,
+      "functions": [
+        "BulkUploadScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "expo-document-picker",
+        "../services/api",
+        "../context/ToastContext",
+        "../context/AuthContext",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/CategoryScreen.js",
+      "bytes": 10885,
+      "sha256": "434b103377c55fcac9c4ebf7652bdf1f4c175ff5a0f2f276d3011f359e992191",
+      "type": "text",
+      "lines": 365,
+      "functions": [
+        "CategoryScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ChapterTitleFixerScreen.js",
+      "bytes": 7710,
+      "sha256": "c3da3f5eb6530efaa44bf2259808813eeb6eb3a5b49bf7f3f49ab57da74cb6b9",
+      "type": "text",
+      "lines": 198,
+      "functions": [
+        "ChapterTitleFixerScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ChapterTitleFixerSelectionScreen.js",
+      "bytes": 9614,
+      "sha256": "ef6b63a9d1e1404357cae2c440ab2be699d5f96feeef6e863c944c2b1988dfe8",
+      "type": "text",
+      "lines": 237,
+      "functions": [
+        "ChapterTitleFixerSelectionScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ContactUsScreen.js",
+      "bytes": 2399,
+      "sha256": "35a3e1745f1cc84173574738cf8f4524da67cbb00ca410af0a4ce8fc6e85731c",
+      "type": "text",
+      "lines": 60,
+      "functions": [
+        "ContactUsScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/DownloadsScreen.js",
+      "bytes": 13088,
+      "sha256": "f0a4309d8770ddd8052574bcb0bb282b9ebd1eb6c462e99d4ad847fe5ed9f165",
+      "type": "text",
+      "lines": 342,
+      "functions": [
+        "DownloadsScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "@react-navigation/native",
+        "../services/offlineStorage",
+        "../components/CustomAlert",
+        "../services/api",
+        "../services/DownloadQueue",
+        "../context/ToastContext",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/EnglishNovelsSelectionScreen.js",
+      "bytes": 17567,
+      "sha256": "59964650c13df627006e7ee5acc5f6ba00fa1a454db2ac8c79742313876d64ad",
+      "type": "text",
+      "lines": 411,
+      "functions": [
+        "EnglishNovelsSelectionScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/GlossaryExtractorHubScreen.js",
+      "bytes": 7830,
+      "sha256": "d86aa3296368ab8c43365c9b69d7b4867807ec5fadd775921695931cf981a215",
+      "type": "text",
+      "lines": 189,
+      "functions": [
+        "GlossaryExtractorHubScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/GlossaryExtractorJobDetailScreen.js",
+      "bytes": 15136,
+      "sha256": "b53dd24e0b05b294103d5bc3c06be9637e129c6c2e4ed1cfe132725768423a63",
+      "type": "text",
+      "lines": 329,
+      "functions": [
+        "GlossaryExtractorJobDetailScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/GlossaryExtractorSelectionScreen.js",
+      "bytes": 19756,
+      "sha256": "7a35f6a5c133b74b7e1806b1ce7629ea54fa91be48b1479f08a491619b275c60",
+      "type": "text",
+      "lines": 444,
+      "functions": [
+        "GlossaryExtractorSelectionScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/GlossaryManagerScreen.js",
+      "bytes": 12702,
+      "sha256": "4777e33e0ba4306fd5073f75163a8e2beee4b854a4e4532c5be56447dd49fb8c",
+      "type": "text",
+      "lines": 286,
+      "functions": [
+        "GlossaryManagerScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/HomeScreen.js",
+      "bytes": 33694,
+      "sha256": "70c88ee4f71b338273518c2b33f82784828f0b74f1056cfc06baaf253a3167fe",
+      "type": "text",
+      "lines": 745,
+      "functions": [
+        "HomeScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../services/api",
+        "../context/AuthContext",
+        "@react-navigation/native",
+        "../../App"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/LibraryScreen.js",
+      "bytes": 17504,
+      "sha256": "c93501fcc79101d905de3eb689ac7b5f135bdee535bd35a32561fe592342535a",
+      "type": "text",
+      "lines": 589,
+      "functions": [
+        "LibraryScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/LoginScreen.js",
+      "bytes": 12805,
+      "sha256": "17bcb5463b1890455a527d49f9c13e8fed6bae5ea5284b8a699bc4404ca2216d",
+      "type": "text",
+      "lines": 398,
+      "functions": [
+        "LoginScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "expo-linear-gradient",
+        "expo-status-bar",
+        "expo-web-browser",
+        "expo-linking",
+        "@expo/vector-icons",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/api",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ManagementScreen.js",
+      "bytes": 12434,
+      "sha256": "9381f87e8d9a9e1c221565edf46e01c139f135648cbff416c3eba1ca64225953",
+      "type": "text",
+      "lines": 347,
+      "functions": [
+        "ManagementScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "@react-navigation/native",
+        "../services/api",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/MetadataTranslationHubScreen.js",
+      "bytes": 15423,
+      "sha256": "a982b8db2ba0fe9bbcf48fdfc087eccc6e7a761e7903da7e8766cea6e5596db7",
+      "type": "text",
+      "lines": 348,
+      "functions": [
+        "MetadataTranslationHubScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "@react-navigation/native",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/NativeReaderScreen.js",
+      "bytes": 134124,
+      "sha256": "7ceb38f33e1ae2e790da46705fe998880e510d06ada0e2856f239a865a7450ae",
+      "type": "text",
+      "lines": 2563,
+      "functions": [
+        "NativeReaderScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "react-native-webview",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "@react-native-async-storage/async-storage",
+        "../services/api",
+        "../components/CommentsSection",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/offlineStorage",
+        "../reader/NativeReaderPanel",
+        "../reader/optionalModules",
+        "../reader/wordsStore"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/NovelDetailScreen.js",
+      "bytes": 47567,
+      "sha256": "c654ac386d5f69da78ed760a5435ab26c7faff0d871e24554eaac811d1c80def",
+      "type": "text",
+      "lines": 1049,
+      "functions": [
+        "NovelDetailScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-web-browser",
+        "../services/api",
+        "@react-navigation/native",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../components/CommentsSection",
+        "../services/offlineStorage",
+        "@react-native-async-storage/async-storage",
+        "../components/CustomAlert",
+        "../services/DownloadQueue",
+        "../../assets/adaptive-icon.png",
+        "../../assets/banner.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/NovelMetadataTranslationScreen.js",
+      "bytes": 8956,
+      "sha256": "2c042e111f89542090c034bdf763a834f5d917d6448b7108a38fb3ab43529040",
+      "type": "text",
+      "lines": 252,
+      "functions": [
+        "NovelMetadataTranslationScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/PrivacyPolicyScreen.js",
+      "bytes": 6471,
+      "sha256": "9ac9b069ae55579d96807116a78b0663dfe13173dff533f50db4b6328e15c85b",
+      "type": "text",
+      "lines": 151,
+      "functions": [
+        "PrivacyPolicyScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ProfileScreen.js",
+      "bytes": 29812,
+      "sha256": "f472b8d8870834f126c69dff7b72359501666a2edace6b70d72ef95ea5a7cc1b",
+      "type": "text",
+      "lines": 878,
+      "functions": [
+        "ProfileScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "expo-linear-gradient",
+        "expo-image-picker",
+        "@react-navigation/native",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/api",
+        "../../App",
+        "@react-native-async-storage/async-storage",
+        "../../assets/banner.png",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/PureTranslatorHubScreen.js",
+      "bytes": 7960,
+      "sha256": "834e56b8727604cf8af5314a796f188dc4b9a74c23477de738b17086b948371d",
+      "type": "text",
+      "lines": 189,
+      "functions": [
+        "PureTranslatorHubScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/PureTranslatorJobDetailScreen.js",
+      "bytes": 15195,
+      "sha256": "862ebfc7940892612b43cbed11b0ad38e71becd7c183ce736141e61ec4ff51f3",
+      "type": "text",
+      "lines": 332,
+      "functions": [
+        "PureTranslatorJobDetailScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/PureTranslatorSelectionScreen.js",
+      "bytes": 19931,
+      "sha256": "30cbee8960dda6bc6ef01f9bbeb7710e7ed1b66173010820ae1bf3ec34cbd565",
+      "type": "text",
+      "lines": 445,
+      "functions": [
+        "PureTranslatorSelectionScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ReaderScreen.js",
+      "bytes": 1795,
+      "sha256": "e1bfb6e5ab6a8b91aa871f7e9f6aa05d2fb5c5d21705469bffaef0ea1ab44533",
+      "type": "text",
+      "lines": 47,
+      "functions": [
+        "ReaderScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@react-native-async-storage/async-storage",
+        "./WebReaderScreen",
+        "./NativeReaderScreen"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ReviewFindingsScreen.js",
+      "bytes": 12822,
+      "sha256": "7513214d817dc1606ec8fb0aaccc70a2ab21da987f350d7dc19854bd90d36c2a",
+      "type": "text",
+      "lines": 298,
+      "functions": [
+        "ReviewFindingsScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ReviewHubScreen.js",
+      "bytes": 7721,
+      "sha256": "64518b167aba3acf0d561f75d104daa09715d2bac30c643dd6ce16a643946a61",
+      "type": "text",
+      "lines": 191,
+      "functions": [
+        "ReviewHubScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ReviewJobDetailScreen.js",
+      "bytes": 17758,
+      "sha256": "17e8242f1719f174f0a90dff1cdaac27c15f9088fe900508f057589f66a611d7",
+      "type": "text",
+      "lines": 387,
+      "functions": [
+        "ReviewJobDetailScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ReviewNovelsSelectionScreen.js",
+      "bytes": 19638,
+      "sha256": "9af8b531a308447b5757eef98463b5af23d6a32ec7682cffdfbc983171fdfb02",
+      "type": "text",
+      "lines": 444,
+      "functions": [
+        "ReviewNovelsSelectionScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/ScraperKeysScreen.js",
+      "bytes": 23455,
+      "sha256": "9e3664471630f568fbf54a80639e41eda6599e9698126c10fbe9fac491dcf9fd",
+      "type": "text",
+      "lines": 539,
+      "functions": [
+        "ScraperKeysScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../context/ToastContext",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/SearchScreen.js",
+      "bytes": 10782,
+      "sha256": "9639b6af5a264add868a7e71f12a18c69dba6ff90cbdb6116e98112ee772580a",
+      "type": "text",
+      "lines": 329,
+      "functions": [
+        "SearchScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "@react-native-async-storage/async-storage",
+        "../services/api"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/SettingsScreen.js",
+      "bytes": 24239,
+      "sha256": "547ef7f29876f2e385e7aa2a6ac8904eef6afb2125259df2340f5c4f01cfb801",
+      "type": "text",
+      "lines": 549,
+      "functions": [
+        "SettingsScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "expo-image-picker",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/api",
+        "../components/CustomAlert",
+        "@react-native-async-storage/async-storage",
+        "./ReaderScreen",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/SignupScreen.js",
+      "bytes": 12356,
+      "sha256": "de368aa867e36d008e61e910d11d78ee39e0762583cab95928c0568a3f50f8ca",
+      "type": "text",
+      "lines": 366,
+      "functions": [
+        "SignupScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "expo-linear-gradient",
+        "expo-status-bar",
+        "@expo/vector-icons",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/api",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TitleGeneratorDetailScreen.js",
+      "bytes": 10219,
+      "sha256": "1290bbd24214fe92c0828cc4c1e776592da0180bb02a864f6bcd173e5b8cdca0",
+      "type": "text",
+      "lines": 251,
+      "functions": [
+        "TitleGeneratorDetailScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TitleGeneratorHubScreen.js",
+      "bytes": 6969,
+      "sha256": "4284f64654a7d88a77fc98c7380313376a2777ea7bc86e439f72bc7802eec0e6",
+      "type": "text",
+      "lines": 182,
+      "functions": [
+        "TitleGeneratorHubScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TitleGeneratorSelectionScreen.js",
+      "bytes": 17706,
+      "sha256": "a72d3d6d4ace55e19785c1c0dca4b3dc3db31943fb8124a967b32856284ee04f",
+      "type": "text",
+      "lines": 412,
+      "functions": [
+        "TitleGeneratorSelectionScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TitleGeneratorSettingsScreen.js",
+      "bytes": 7058,
+      "sha256": "a32d12cd058af1e6cb0d36e63492ce845c4568937da6d024dcc156cbbc42d6ed",
+      "type": "text",
+      "lines": 186,
+      "functions": [
+        "TitleGeneratorSettingsScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../context/ToastContext",
+        "../services/api",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TranslationJobDetailScreen.js",
+      "bytes": 12239,
+      "sha256": "2cb5c36836429816e0c6d215698179eaa28213e984a85eb52ba6dee600d2ea3d",
+      "type": "text",
+      "lines": 281,
+      "functions": [
+        "TranslationJobDetailScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TranslatorHubScreen.js",
+      "bytes": 7826,
+      "sha256": "8d7e6171f3594ee05827111189f3f8e905af1b7dcb61954ddf721b0d154f725a",
+      "type": "text",
+      "lines": 200,
+      "functions": [
+        "TranslatorHubScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-linear-gradient",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "../services/api",
+        "@react-navigation/native",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/TranslatorSettingsScreen.js",
+      "bytes": 57593,
+      "sha256": "cd0e117771f376ad8a139eb8d3b54728c4abf01ef91490c58107371e7663f590",
+      "type": "text",
+      "lines": 998,
+      "functions": [
+        "TranslatorSettingsScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../context/ToastContext",
+        "../services/api",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/UsersManagementScreen.js",
+      "bytes": 11714,
+      "sha256": "fd3494b4a21f594e2b3b33d5a8c164e32538b736f591ff04ab6584169adc92ca",
+      "type": "text",
+      "lines": 279,
+      "functions": [
+        "UsersManagementScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "expo-image",
+        "@expo/vector-icons",
+        "react-native-safe-area-context",
+        "expo-linear-gradient",
+        "../services/api",
+        "../context/ToastContext",
+        "../components/CustomAlert",
+        "../../assets/adaptive-icon.png"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/screens/WebReaderScreen.js",
+      "bytes": 78721,
+      "sha256": "454dfb2a7b4a2b844d5c7d7deef0aaf6c6d0e3bad62cf98207146a74abb65d16",
+      "type": "text",
+      "lines": 1562,
+      "functions": [
+        "WebReaderScreen"
+      ],
+      "imports": [
+        "react",
+        "react-native",
+        "react-native-webview",
+        "@expo/vector-icons",
+        "../reader/optionalModules",
+        "react-native-safe-area-context",
+        "@react-native-async-storage/async-storage",
+        "../services/api",
+        "../components/CommentsSection",
+        "../context/AuthContext",
+        "../context/ToastContext",
+        "../services/offlineStorage",
+        "../reader/worShell",
+        "../reader/wordsStore"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/services/DownloadQueue.js",
+      "bytes": 5078,
+      "sha256": "2a179fe62a64943c5f3ffe84c6b62d63efbd62214b1e41f2a79f61ba0dfb6123",
+      "type": "text",
+      "lines": 158,
+      "functions": [],
+      "imports": [
+        "@react-native-async-storage/async-storage",
+        "./api",
+        "./offlineStorage"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/services/api.js",
+      "bytes": 1069,
+      "sha256": "5e6ce890352eb0bacecf8834ab95823850a7d9530068f4e3a68d82bba52f36dc",
+      "type": "text",
+      "lines": 41,
+      "functions": [],
+      "imports": [
+        "axios",
+        "@react-native-async-storage/async-storage"
+      ],
+      "routes": []
+    },
+    {
+      "path": "web/src/services/offlineStorage.js",
+      "bytes": 6965,
+      "sha256": "6d5fa911c6bbd539434eb57d8543fd1e70abfa4c8d368099bca549ffb4b3b34e",
+      "type": "text",
+      "lines": 194,
+      "functions": [],
+      "imports": [
+        "@react-native-async-storage/async-storage"
+      ],
+      "routes": []
+    }
+  ]
+}

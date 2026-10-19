@@ -1,0 +1,14 @@
+{
+  "provider": "gemini",
+  "source": "https://www.gutenberg.org/files/11/11-0.txt",
+  "chapter": "Alice in Wonderland — chapter I",
+  "sourceChars": 11551,
+  "sourceUnits": 31,
+  "date": "2026-10-19T02:25:28.057Z",
+  "completedUnits": 31,
+  "status": "passed-structural-coverage",
+  "outputChars": 9571,
+  "residueRepairCount": 1,
+  "chapterValidationPassed": true,
+  "finalValidatedAt": "2026-10-19T02:32:42.779Z"
+}
