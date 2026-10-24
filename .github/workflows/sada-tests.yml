@@ -1,0 +1,23 @@
+name: Sada Simulator Tests
+on:
+  push:
+    branches: [feature/sada-ios-audio]
+    paths: ['ios/**', '.github/workflows/sada-tests.yml']
+  workflow_dispatch:
+jobs:
+  simulator:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: cd ios && xcodegen generate
+      - name: Select available iPhone simulator
+        run: |
+          DEVICE=$(xcrun simctl list devices available -j | python3 -c 'import json,sys; d=json.load(sys.stdin); print(next(v["udid"] for values in d["devices"].values() for v in values if "iPhone" in v["name"]))')
+          echo "DEVICE=$DEVICE" >> "$GITHUB_ENV"
+      - run: xcodebuild test -project ios/Sada.xcodeproj -scheme Sada -destination "platform=iOS Simulator,id=$DEVICE" -resultBundlePath TestResults CODE_SIGNING_ALLOWED=NO
+      - uses: actions/upload-artifact@v4
+        if: always()
+        with:
+          name: Sada-Simulator-Results
+          path: TestResults.xcresult
