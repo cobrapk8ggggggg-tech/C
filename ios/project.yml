@@ -13,12 +13,19 @@ targets:
     type: application
     platform: iOS
     sources: [Sada]
+    info:
+      path: Sada/Info.plist
+      properties:
+        CFBundleDisplayName: صدى
+        UIBackgroundModes: [audio]
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
     settings:
       base:
         PRODUCT_BUNDLE_IDENTIFIER: com.sada.audio
         GENERATE_INFOPLIST_FILE: YES
         INFOPLIST_KEY_CFBundleDisplayName: صدى
-        INFOPLIST_KEY_UIBackgroundModes: [audio]
         INFOPLIST_KEY_UILaunchScreen_Generation: YES
         INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
     entitlements:
