@@ -16,6 +16,9 @@ targets:
     info:
       path: Sada/Info.plist
       properties:
+        CFBundleVersion: '1'
+        CFBundleShortVersionString: '1.0'
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
         CFBundleDisplayName: صدى
         UIBackgroundModes: [audio]
         UILaunchScreen: {}
@@ -41,6 +44,8 @@ targets:
     info:
       path: Share/Info.plist
       properties:
+        CFBundleVersion: '1'
+        CFBundleShortVersionString: '1.0'
         CFBundleDisplayName: حفظ في صدى
         NSExtension:
           NSExtensionPointIdentifier: com.apple.share-services
