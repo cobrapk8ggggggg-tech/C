@@ -1,6 +1,7 @@
 import SwiftUI
 
 @main struct SadaApp: App {
+    @UIApplicationDelegateAdaptor(AppDelegate.self) var delegate
     @StateObject private var library = Library()
     @Environment(\.scenePhase) private var phase
     var body: some Scene {

@@ -16,6 +16,11 @@ struct Track: Codable, Identifiable, Equatable {
     @Published var busy = false
     @Published var message: String?
     @Published var elapsed = 0.0
+    private lazy var transfers: URLSession = {
+        let config = URLSessionConfiguration.background(withIdentifier: "com.sada.audio.downloads")
+        config.sessionSendsLaunchEvents = true
+        return URLSession(configuration: config, delegate: self, delegateQueue: nil)
+    }()
     private var player: AVAudioPlayer?
     private var timer: Timer?
     private let root = FileManager.default.urls(for: .documentDirectory, in: .userDomainMask)[0]
@@ -39,6 +44,7 @@ struct Track: Codable, Identifiable, Equatable {
             let reason = note.userInfo?[AVAudioSessionRouteChangeReasonKey] as? UInt
             Task { @MainActor in if reason == AVAudioSession.RouteChangeReason.oldDeviceUnavailable.rawValue { self?.pause() } }
         }
+        _ = transfers
         timer = Timer.scheduledTimer(withTimeInterval: 0.5, repeats: true) { [weak self] _ in
             Task { @MainActor in self?.elapsed = self?.player?.currentTime ?? 0 }
         }
@@ -46,17 +52,23 @@ struct Track: Codable, Identifiable, Equatable {
     func download(_ link: String) async {
         guard !busy else { return }
         busy = true
-        defer { busy = false }
         do {
             let source = try await YouTube.resolve(link)
-            let (temp, response) = try await URLSession.shared.download(from: source.url)
-            guard let http = response as? HTTPURLResponse, http.statusCode == 200,
-                  !(http.mimeType ?? "").contains("text"), !(http.mimeType ?? "").contains("json") else { throw SourceError.invalidAudio }
+            let task = transfers.downloadTask(with: source.url)
+            task.taskDescription = source.title + "\n" + source.author
+            task.resume()
+        } catch { busy = false; message = error.localizedDescription }
+    }
+    private func accept(_ temp: URL, description: String, valid: Bool) {
+        defer { busy = false; try? FileManager.default.removeItem(at: temp) }
+        do {
+            guard valid else { throw SourceError.invalidAudio }
             let probe = try AVAudioPlayer(contentsOf: temp)
             guard probe.duration > 0 else { throw SourceError.invalidAudio }
-            let id = UUID(), file = UUID().uuidString + ".m4a"
+            let file = UUID().uuidString + ".m4a"
             try FileManager.default.moveItem(at: temp, to: root.appendingPathComponent(file))
-            tracks.insert(Track(id: id, title: source.title, author: source.author, file: file, duration: probe.duration), at: 0)
+            let parts = description.components(separatedBy: "\n")
+            tracks.insert(Track(id: UUID(), title: parts.first ?? "صوت", author: parts.dropFirst().joined(separator: " "), file: file, duration: probe.duration), at: 0)
             try save()
             message = "تم الحفظ • متاح بدون إنترنت"
         } catch { message = error.localizedDescription }
@@ -101,4 +113,28 @@ struct Track: Codable, Identifiable, Equatable {
         MPNowPlayingInfoCenter.default().nowPlayingInfo = [MPMediaItemPropertyTitle: current.title, MPMediaItemPropertyArtist: current.author, MPMediaItemPropertyPlaybackDuration: current.duration, MPNowPlayingInfoPropertyElapsedPlaybackTime: player?.currentTime ?? 0, MPNowPlayingInfoPropertyPlaybackRate: playing ? 1.0 : 0.0]
     }
     nonisolated func audioPlayerDidFinishPlaying(_ player: AVAudioPlayer, successfully flag: Bool) { Task { @MainActor in next(1) } }
+}
+
+extension Library: URLSessionDownloadDelegate {
+    nonisolated func urlSession(_ session: URLSession, downloadTask: URLSessionDownloadTask, didFinishDownloadingTo location: URL) {
+        let copy = FileManager.default.temporaryDirectory.appendingPathComponent(UUID().uuidString)
+        do { try FileManager.default.moveItem(at: location, to: copy) }
+        catch { Task { @MainActor in self.busy = false; self.message = error.localizedDescription }; return }
+        let response = downloadTask.response as? HTTPURLResponse
+        let valid = response?.statusCode == 200 && !(response?.mimeType ?? "").contains("text") && !(response?.mimeType ?? "").contains("json")
+        let description = downloadTask.taskDescription ?? "صوت"
+        Task { @MainActor in self.accept(copy, description: description, valid: valid) }
+    }
+    nonisolated func urlSession(_ session: URLSession, task: URLSessionTask, didCompleteWithError error: Error?) {
+        if let error { Task { @MainActor in self.busy = false; self.message = error.localizedDescription } }
+    }
+    nonisolated func urlSessionDidFinishEvents(forBackgroundURLSession session: URLSession) {
+        Task { @MainActor in BackgroundEvents.completion?(); BackgroundEvents.completion = nil }
+    }
+}
+@MainActor enum BackgroundEvents { static var completion: (() -> Void)? }
+final class AppDelegate: NSObject, UIApplicationDelegate {
+    func application(_ application: UIApplication, handleEventsForBackgroundURLSession identifier: String, completionHandler: @escaping () -> Void) {
+        BackgroundEvents.completion = completionHandler
+    }
 }

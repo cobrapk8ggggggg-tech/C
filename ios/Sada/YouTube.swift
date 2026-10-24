@@ -36,7 +36,26 @@ enum YouTube {
         request.setValue("2.20260715.04.00", forHTTPHeaderField: "x-youtube-client-version")
         let (data, response) = try await URLSession.shared.data(for: request)
         guard (response as? HTTPURLResponse)?.statusCode == 200 else { throw SourceError.unavailable }
-        let json = try JSONSerialization.jsonObject(with: data)
+        let json: Any
+        if let decoded = try? JSONSerialization.jsonObject(with: data) { json = decoded }
+        else if let html = String(data: data, encoding: .utf8),
+                let marker = html.range(of: "ytInitialPlayerResponse = "),
+                let start = html[marker.upperBound...].firstIndex(of: "{") {
+            var depth = 0, quoted = false, escaped = false
+            var end: String.Index?
+            for index in html[start...].indices {
+                let char = html[index]
+                if escaped { escaped = false; continue }
+                if char == "\\" && quoted { escaped = true; continue }
+                if char == "\"" { quoted.toggle() }
+                if !quoted {
+                    if char == "{" { depth += 1 }
+                    if char == "}" { depth -= 1; if depth == 0 { end = index; break } }
+                }
+            }
+            guard let end, let payload = String(html[start...end]).data(using: .utf8) else { throw SourceError.unavailable }
+            json = ["playerResponse": try JSONSerialization.jsonObject(with: payload)]
+        } else { throw SourceError.unavailable }
         let objects = (json as? [[String: Any]]) ?? [(json as? [String: Any]) ?? [:]]
         for object in objects {
             guard let player = object["playerResponse"] as? [String: Any],
