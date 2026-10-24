@@ -1,0 +1,23 @@
+name: Sada Unsigned IPA
+on:
+  workflow_dispatch:
+  push:
+    branches: [feature/sada-ios-audio]
+    paths: ['ios/**', '.github/workflows/sada-ipa.yml']
+jobs:
+  ipa:
+    runs-on: macos-15
+    steps:
+      - uses: actions/checkout@v4
+      - run: brew install xcodegen
+      - run: cd ios && xcodegen generate
+      - run: xcodebuild -project ios/Sada.xcodeproj -scheme Sada -configuration Release -sdk iphoneos -derivedDataPath build CODE_SIGNING_ALLOWED=NO build
+      - name: Package unsigned app
+        run: |
+          mkdir Payload
+          cp -R build/Build/Products/Release-iphoneos/Sada.app Payload/
+          zip -qr Sada-unsigned.ipa Payload
+      - uses: actions/upload-artifact@v4
+        with:
+          name: Sada-unsigned-IPA
+          path: Sada-unsigned.ipa

@@ -14,3 +14,11 @@ dist/
 .env
 .env.*
 !.env.example
+
+# Sada generated Xcode files
+ios/Sada.xcodeproj/
+ios/**/Info.plist
+ios/**/*.entitlements
+build/
+Payload/
+*.ipa

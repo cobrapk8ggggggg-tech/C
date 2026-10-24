@@ -1,0 +1,80 @@
+name: Sada
+options:
+  bundleIdPrefix: com.sada
+  deploymentTarget:
+    iOS: '17.0'
+settings:
+  base:
+    SWIFT_VERSION: '5.0'
+    TARGETED_DEVICE_FAMILY: '1,2'
+    CODE_SIGNING_ALLOWED: NO
+targets:
+  Sada:
+    type: application
+    platform: iOS
+    sources: [Sada]
+    info:
+      path: Sada/Info.plist
+      properties:
+        CFBundleVersion: '1'
+        CFBundleShortVersionString: '1.0'
+        UISupportedInterfaceOrientations: [UIInterfaceOrientationPortrait, UIInterfaceOrientationPortraitUpsideDown, UIInterfaceOrientationLandscapeLeft, UIInterfaceOrientationLandscapeRight]
+        CFBundleDisplayName: صدى
+        UIBackgroundModes: [audio]
+        UILaunchScreen: {}
+        UIApplicationSceneManifest:
+          UIApplicationSupportsMultipleScenes: false
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sada.audio
+        GENERATE_INFOPLIST_FILE: YES
+        INFOPLIST_KEY_CFBundleDisplayName: صدى
+        INFOPLIST_KEY_UILaunchScreen_Generation: YES
+        INFOPLIST_KEY_UIApplicationSceneManifest_Generation: YES
+    entitlements:
+      path: Sada/Sada.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.sada.audio]
+    dependencies:
+      - target: SadaShare
+  SadaShare:
+    type: app-extension
+    platform: iOS
+    sources: [Share]
+    info:
+      path: Share/Info.plist
+      properties:
+        CFBundleVersion: '1'
+        CFBundleShortVersionString: '1.0'
+        CFBundleDisplayName: حفظ في صدى
+        NSExtension:
+          NSExtensionPointIdentifier: com.apple.share-services
+          NSExtensionPrincipalClass: $(PRODUCT_MODULE_NAME).ShareViewController
+          NSExtensionAttributes:
+            NSExtensionActivationRule:
+              NSExtensionActivationSupportsWebURLWithMaxCount: 1
+              NSExtensionActivationSupportsText: YES
+    entitlements:
+      path: Share/Share.entitlements
+      properties:
+        com.apple.security.application-groups: [group.com.sada.audio]
+    settings:
+      base:
+        PRODUCT_BUNDLE_IDENTIFIER: com.sada.audio.share
+  SadaTests:
+    type: bundle.unit-test
+    platform: iOS
+    sources: [Tests]
+    dependencies: [{target: Sada}]
+  SadaUITests:
+    type: bundle.ui-testing
+    platform: iOS
+    sources: [UITests]
+    dependencies: [{target: Sada}]
+schemes:
+  Sada:
+    build:
+      targets:
+        Sada: all
+    test:
+      targets: [SadaTests, SadaUITests]
